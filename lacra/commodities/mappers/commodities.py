@@ -1,0 +1,68 @@
+from dataclasses import dataclass
+
+from lacra.commodities.mappers.commodities_groups import CommoditiesGroupsMapper
+from lacra.commodities.schemas.dto import CommodityDTO, CommodityWithBalanceDTO, CommodityWithGroupDTO
+from lacra.common.utils import localized_name
+from lacra.db.models import Commodity
+
+
+@dataclass(slots=True)
+class CommoditiesMapper:
+    @staticmethod
+    def to_dto(commodity: Commodity) -> CommodityDTO:
+        from lacra.db.models.commodities import COMMODITY_HAS_RECIPE_FIELD
+
+        has_recipe = getattr(commodity, COMMODITY_HAS_RECIPE_FIELD, False)
+
+        return CommodityDTO(
+            id=commodity.id,
+            code=commodity.code,
+            name=localized_name(commodity.name, commodity.name_variants),
+            unit=commodity.unit,
+            has_recipe=has_recipe,
+        )
+
+    @staticmethod
+    def to_dto_with_group(commodity: Commodity) -> CommodityWithGroupDTO:
+        from lacra.db.models.commodities import COMMODITY_HAS_RECIPE_FIELD
+
+        group = CommoditiesGroupsMapper.to_dto(commodity.group)
+        has_recipe = getattr(commodity, COMMODITY_HAS_RECIPE_FIELD, False)
+
+        return CommodityWithGroupDTO(
+            id=commodity.id,
+            code=commodity.code,
+            name=localized_name(commodity.name, commodity.name_variants),
+            unit=commodity.unit,
+            group=group,
+            has_recipe=has_recipe,
+        )
+
+    @staticmethod
+    def to_dto_list(commodities: list[Commodity]) -> list[CommodityDTO]:
+        return [CommoditiesMapper.to_dto(commodity) for commodity in commodities]
+
+    @staticmethod
+    def to_dto_list_with_group(commodities: list[Commodity]) -> list[CommodityWithGroupDTO]:
+        return [CommoditiesMapper.to_dto_with_group(commodity) for commodity in commodities]
+
+    @staticmethod
+    def to_dto_with_balance(commodity: Commodity) -> CommodityWithBalanceDTO:
+        from lacra.db.models.commodities import COMMODITY_HAS_RECIPE_FIELD
+
+        group = CommoditiesGroupsMapper.to_dto(commodity.group)
+        has_recipe = getattr(commodity, COMMODITY_HAS_RECIPE_FIELD, False)
+
+        return CommodityWithBalanceDTO(
+            id=commodity.id,
+            code=commodity.code,
+            name=localized_name(commodity.name, commodity.name_variants),
+            unit=commodity.unit,
+            group=group,
+            balance=commodity.balance,
+            has_recipe=has_recipe,
+        )
+
+    @staticmethod
+    def to_dto_list_with_balance(commodities: list[Commodity]) -> list[CommodityWithBalanceDTO]:
+        return [CommoditiesMapper.to_dto_with_balance(commodity) for commodity in commodities]

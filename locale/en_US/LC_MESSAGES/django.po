@@ -1,0 +1,561 @@
+# Lacra Backend Translation File
+# Copyright (C) 2025 Lacra Team
+# This file is distributed under the same license as the Lacra package.
+# Lacra Team <lacra@maddevs.io>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Lacra 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-29 10:00+0000\n"
+"PO-Revision-Date: 2025-05-01 12:00+0000\n"
+"Last-Translator: Lacra Team <lacra@maddevs.io>\n"
+"Language-Team: Lacra Team <lacra@maddevs.io>\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+# Project strings
+# ----------------------------------------------------------------------------------------------------------------------
+
+msgid "Token is invalid"
+msgstr ""
+
+msgid "No active account found with the given credentials"
+msgstr ""
+
+msgid "No verified gadget found"
+msgstr ""
+
+msgid "Authorized"
+msgstr ""
+
+msgid "Bad Request"
+msgstr ""
+
+msgid "Gadget verified"
+msgstr ""
+
+msgid "Verification code sent"
+msgstr ""
+
+msgid "Reset code sent"
+msgstr ""
+
+msgid "Verification code is valid"
+msgstr ""
+
+msgid "Password reset"
+msgstr ""
+
+msgid "Your verification code"
+msgstr ""
+
+#, python-format
+msgid "Your verification code is: %s"
+msgstr ""
+
+msgid "Invalid email"
+msgstr ""
+
+msgid "Email address or phone number is required"
+msgstr ""
+
+msgid "Gadget with this identifier already exists"
+msgstr ""
+
+msgid "Registered"
+msgstr ""
+
+msgid "OAuth error"
+msgstr ""
+
+msgid "At least one verified gadget is required"
+msgstr ""
+
+msgid "Unauthorized"
+msgstr ""
+
+msgid "Forbidden"
+msgstr ""
+
+msgid "Object Not Found"
+msgstr ""
+
+msgid "Conflict"
+msgstr ""
+
+msgid "Internal Server Error"
+msgstr ""
+
+#, python-format
+msgid "Password must be at least %d characters long"
+msgstr ""
+
+msgid "Password must contain at least one uppercase letter"
+msgstr ""
+
+msgid "Password must contain at least one lowercase letter"
+msgstr ""
+
+msgid "Password must contain at least one number"
+msgstr ""
+
+msgid "Balance"
+msgstr ""
+
+msgid "Metadata"
+msgstr ""
+
+msgid "Commodity Group"
+msgstr ""
+
+msgid "Commodity"
+msgstr ""
+
+msgid "Notification"
+msgstr ""
+
+msgid "Transaction"
+msgstr ""
+
+msgid "Location"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Permissions"
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "Gadget"
+msgstr ""
+
+msgid "Dashboard"
+msgstr ""
+
+msgid "Django site admin"
+msgstr ""
+
+msgid "Active Traders"
+msgstr ""
+
+msgid "Last"
+msgstr ""
+
+msgid "days"
+msgstr ""
+
+msgid "Total Commodities"
+msgstr ""
+
+msgid "With active balances"
+msgstr ""
+
+msgid "Total Registrations"
+msgstr ""
+
+msgid "All time users"
+msgstr ""
+
+msgid "Current Seasons"
+msgstr ""
+
+msgid "Active harvest seasons"
+msgstr ""
+
+msgid "Transactions by Traceability Status"
+msgstr ""
+
+msgid "Transactions by Season"
+msgstr ""
+
+msgid "Daily Registrations Over Time"
+msgstr ""
+
+msgid "Daily Transactions by Season"
+msgstr ""
+
+msgid "Balance Summary by Commodity"
+msgstr ""
+
+msgid "Code"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Unit"
+msgstr ""
+
+msgid "Total Volume"
+msgstr ""
+
+msgid "No balance data available"
+msgstr ""
+
+msgid "Balance commodity"
+msgstr ""
+
+msgid "Balance user"
+msgstr ""
+
+msgid "Balances"
+msgstr ""
+
+msgid "Unique identifier for this record."
+msgstr ""
+
+msgid "Timestamp when this record was created."
+msgstr ""
+
+msgid "Timestamp when this record was last updated."
+msgstr ""
+
+msgid "Name of the commodity group"
+msgstr ""
+
+msgid "Alternative name variations and translations"
+msgstr ""
+
+msgid "Commodity Groups"
+msgstr ""
+
+msgid "Commodity code"
+msgstr ""
+
+msgid "Name of the commodity"
+msgstr ""
+
+msgid "Unit of measurement"
+msgstr ""
+
+msgid "Commodity group"
+msgstr ""
+
+msgid "Commodities"
+msgstr ""
+
+msgid "Conversion Recipe"
+msgstr ""
+
+msgid "Conversion Recipes"
+msgstr ""
+
+msgid "Conversion recipe"
+msgstr ""
+
+msgid "Input commodity"
+msgstr ""
+
+msgid "Quantity of this commodity required as input"
+msgstr ""
+
+msgid "Conversion Input"
+msgstr ""
+
+msgid "Conversion Inputs"
+msgstr ""
+
+msgid "Output commodity"
+msgstr ""
+
+msgid "Quantity of this commodity produced as output"
+msgstr ""
+
+msgid "Conversion Output"
+msgstr ""
+
+msgid "Conversion Outputs"
+msgstr ""
+
+msgid "Name or description of this conversion recipe"
+msgstr ""
+
+msgid "Inputs"
+msgstr ""
+
+msgid "Outputs"
+msgstr ""
+
+msgid "Notification data"
+msgstr ""
+
+msgid "Status of the notification"
+msgstr ""
+
+msgid "Type of notification"
+msgstr ""
+
+msgid "User who received this notification"
+msgstr ""
+
+msgid "User who created this notification"
+msgstr ""
+
+msgid "Notifications"
+msgstr ""
+
+msgid "User who owns this notification settings"
+msgstr ""
+
+msgid "Indicates whether notifications of this type are enabled"
+msgstr ""
+
+msgid "Notification Settings"
+msgstr ""
+
+msgid "Season"
+msgstr ""
+
+msgid "Seasons"
+msgstr ""
+
+msgid "Season Commodity"
+msgstr ""
+
+msgid "Season Commodities"
+msgstr ""
+
+msgid "Name of the season"
+msgstr ""
+
+msgid "Description of the season"
+msgstr ""
+
+msgid "Start date of the season"
+msgstr ""
+
+msgid "End date of the season"
+msgstr ""
+
+msgid "Commodities participating in this season"
+msgstr ""
+
+msgid "Type of transaction"
+msgstr ""
+
+msgid "Source of location geodata"
+msgstr ""
+
+msgid "Status of the transaction"
+msgstr ""
+
+msgid "Traceability status of the transaction"
+msgstr ""
+
+msgid "Transaction latitude coordinate"
+msgstr ""
+
+msgid "Transaction longitude coordinate"
+msgstr ""
+
+msgid "Farm latitude coordinate"
+msgstr ""
+
+msgid "Farm longitude coordinate"
+msgstr ""
+
+msgid "Commodity being traded"
+msgstr ""
+
+msgid "Volume of commodities"
+msgstr ""
+
+msgid "Seller in this transaction"
+msgstr ""
+
+msgid "Buyer in this transaction"
+msgstr ""
+
+msgid "User who created this transaction"
+msgstr ""
+
+msgid "Season this transaction belongs to"
+msgstr ""
+
+msgid "Whether this transaction is buying from a farmer directly"
+msgstr ""
+
+msgid "Whether this transaction was created automatically"
+msgstr ""
+
+msgid "When this transaction expires"
+msgstr ""
+
+msgid "Transactions"
+msgstr ""
+
+msgid "Indicates whether this user has been soft deleted"
+msgstr ""
+
+msgid "Users"
+msgstr ""
+
+msgid "Type of contact method (phone or email)"
+msgstr ""
+
+msgid "Contact identifier (e.g. email address or phone number)"
+msgstr ""
+
+msgid "Indicates whether this contact method has been verified by the user"
+msgstr ""
+
+msgid "The user this gadget belongs to"
+msgstr ""
+
+msgid "Gadgets"
+msgstr ""
+
+msgid "Invalid update status"
+msgstr ""
+
+msgid "Device with this token already exists"
+msgstr ""
+
+msgid "Notification status updated"
+msgstr ""
+
+msgid "Notification settings updated"
+msgstr ""
+
+msgid "Device added"
+msgstr ""
+
+msgid "Service is healthy"
+msgstr ""
+
+msgid "Navigation"
+msgstr ""
+
+msgid "Periodic Tasks"
+msgstr ""
+
+msgid "User Management"
+msgstr ""
+
+msgid "Trading"
+msgstr ""
+
+msgid "Commodity group is required"
+msgstr ""
+
+msgid "Only accepted status is allowed"
+msgstr ""
+
+msgid "Location must be complete or must be empty"
+msgstr ""
+
+msgid "Location file must be provided for this location type"
+msgstr ""
+
+msgid "Location file is not supported for this location type"
+msgstr ""
+
+msgid "Location file syntax is invalid"
+msgstr ""
+
+msgid "Transaction can only be accepted or rejected"
+msgstr ""
+
+msgid "Transaction recipient cannot be the same as the user"
+msgstr ""
+
+msgid "Transaction recipient is not specified"
+msgstr ""
+
+msgid "Location file upload error"
+msgstr ""
+
+msgid "Location file download error"
+msgstr ""
+
+msgid "Transaction recipient data must contain only one identifier at a time"
+msgstr ""
+
+msgid "Latitude must be between -90 and 90 degrees"
+msgstr ""
+
+msgid "Longitude must be between -180 and 180 degrees"
+msgstr ""
+
+msgid "Insufficient balance for conversion"
+msgstr ""
+
+msgid "At least one input commodity is required"
+msgstr ""
+
+msgid "At least one output commodity is required"
+msgstr ""
+
+msgid "Duplicate commodity in inputs"
+msgstr ""
+
+msgid "Duplicate commodity in outputs"
+msgstr ""
+
+msgid "Same commodity cannot be both input and output"
+msgstr ""
+
+msgid "Conversion recipe not found"
+msgstr ""
+
+msgid "Override commodity not found in recipe"
+msgstr ""
+
+msgid "At least one input must have quantity greater than zero"
+msgstr ""
+
+msgid "Transaction status updated"
+msgstr ""
+
+msgid "Transaction geodata updated"
+msgstr ""
+
+msgid "Missing geodata requested"
+msgstr ""
+
+msgid "Transaction notification resent"
+msgstr ""
+
+msgid "Conversion completed successfully"
+msgstr ""
+
+msgid "Welcome to LACRA!"
+msgstr ""
+
+msgid "You have been invited to Lacra!"
+msgstr ""
+
+msgid "Current password is incorrect"
+msgstr ""
+
+msgid "Email sending error"
+msgstr ""
+
+msgid "SMS sending error"
+msgstr ""
+
+msgid "Cannot delete the last verified gadget"
+msgstr ""
+
+msgid "Exactly one identifier must be specified"
+msgstr ""
+
+msgid "Gadget exists"
+msgstr ""
+
+msgid "Gadget deleted"
+msgstr ""
+
+msgid "Password changed"
+msgstr ""
+
+msgid "Profile deleted"
+msgstr ""

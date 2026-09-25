@@ -1,0 +1,77 @@
+from typing import Any
+
+from rest_framework import views
+from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
+from rest_framework.response import Response
+
+from lacra.auth.otp.schemas.requests import (
+    OTPSendRequest,
+    OTPVerifyRequest,
+    PasswordResetCheckRequest,
+    PasswordResetSendRequest,
+    PasswordResetVerifyRequest,
+)
+from lacra.auth.otp.schemas.responses import (
+    OTPSentResponse,
+    OTPVerifiedResponse,
+    PasswordResetOTPValidResponse,
+    PasswordResetResponse,
+    PasswordResetSentResponse,
+)
+from lacra.auth.otp.services.reset_password import ResetPasswordService
+from lacra.auth.otp.services.verify_gadget import VerifyGadgetService
+from lacra.common.captcha import CaptchaService
+from lacra.common.throttling import OTPIdentifierCooldownThrottle, OTPIdentifierThrottle, OTPThrottle
+
+
+class OTPSendView(views.APIView):
+    permission_classes = (AllowAny,)
+    throttle_classes = [OTPThrottle, OTPIdentifierCooldownThrottle, OTPIdentifierThrottle]
+
+    def post(self, request: Request, *_: Any, **__: Any) -> Response:
+        payload = OTPSendRequest.parse(request)
+        CaptchaService.verify(payload.captcha_token)
+        VerifyGadgetService.send_otp_code(payload)
+        return OTPSentResponse().as_response()
+
+
+class OTPVerifyView(views.APIView):
+    permission_classes = (AllowAny,)
+    throttle_classes = [OTPThrottle]
+
+    def post(self, request: Request, *_: Any, **__: Any) -> Response:
+        payload = OTPVerifyRequest.parse(request)
+        VerifyGadgetService.verify_otp_code(payload)
+        return OTPVerifiedResponse().as_response()
+
+
+class PasswordResetSendView(views.APIView):
+    permission_classes = (AllowAny,)
+    throttle_classes = [OTPThrottle, OTPIdentifierCooldownThrottle, OTPIdentifierThrottle]
+
+    def post(self, request: Request, *_: Any, **__: Any) -> Response:
+        payload = PasswordResetSendRequest.parse(request)
+        CaptchaService.verify(payload.captcha_token)
+        ResetPasswordService.send_otp_code(payload)
+        return PasswordResetSentResponse().as_response()
+
+
+class PasswordResetCheckView(views.APIView):
+    permission_classes = (AllowAny,)
+    throttle_classes = [OTPThrottle]
+
+    def post(self, request: Request, *_: Any, **__: Any) -> Response:
+        payload = PasswordResetCheckRequest.parse(request)
+        ResetPasswordService.check_otp_code(payload.identifier, payload.code)
+        return PasswordResetOTPValidResponse().as_response()
+
+
+class PasswordResetVerifyView(views.APIView):
+    permission_classes = (AllowAny,)
+    throttle_classes = [OTPThrottle]
+
+    def post(self, request: Request, *_: Any, **__: Any) -> Response:
+        payload = PasswordResetVerifyRequest.parse(request)
+        ResetPasswordService.verify_otp_code(payload)
+        return PasswordResetResponse().as_response()

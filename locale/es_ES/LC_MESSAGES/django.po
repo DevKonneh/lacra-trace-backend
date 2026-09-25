@@ -1,0 +1,489 @@
+# Lacra Backend Translation File
+# Copyright (C) 2025 Lacra Team
+# This file is distributed under the same license as the Lacra package.
+# Lacra Team <lacra@maddevs.io>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Lacra 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-29 10:01+0000\n"
+"PO-Revision-Date: 2025-05-01 12:00+0000\n"
+"Last-Translator: Lacra Team <lacra@maddevs.io>\n"
+"Language-Team: Lacra Team <lacra@maddevs.io>\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+# Project strings
+# ----------------------------------------------------------------------------------------------------------------------
+
+msgid "Token is invalid"
+msgstr "El token no es válido"
+
+msgid "No active account found with the given credentials"
+msgstr "No se encontró ninguna cuenta activa con las credenciales proporcionadas"
+
+msgid "No verified gadget found"
+msgstr "No se encontró ningún dispositivo verificado"
+
+msgid "Authorized"
+msgstr "Autorizado"
+
+msgid "Bad Request"
+msgstr "Solicitud incorrecta"
+
+msgid "Gadget verified"
+msgstr "Dispositivo verificado"
+
+msgid "Verification code sent"
+msgstr "Código de verificación enviado"
+
+msgid "Reset code sent"
+msgstr "Código de restablecimiento enviado"
+
+msgid "Verification code is valid"
+msgstr "El código de verificación es válido"
+
+msgid "Password reset"
+msgstr "Restablecimiento de contraseña"
+
+msgid "Your verification code"
+msgstr "Su código de verificación"
+
+#, python-format
+msgid "Your verification code is: %s"
+msgstr "Su código de verificación es: %s"
+
+msgid "Invalid email"
+msgstr "Email no válido"
+
+msgid "Email address or phone number is required"
+msgstr "Se requiere dirección de email o número de teléfono"
+
+msgid "Gadget with this identifier already exists"
+msgstr "Ya existe un dispositivo con este identificador"
+
+msgid "Registered"
+msgstr "Registrado"
+
+msgid "OAuth error"
+msgstr "Error de OAuth"
+
+msgid "At least one verified gadget is required"
+msgstr "Se requiere al menos un dispositivo verificado"
+
+msgid "Unauthorized"
+msgstr "No autorizado"
+
+msgid "Forbidden"
+msgstr "Prohibido"
+
+msgid "Object Not Found"
+msgstr "Objeto no encontrado"
+
+msgid "Conflict"
+msgstr "Conflicto"
+
+msgid "Internal Server Error"
+msgstr "Error interno del servidor"
+
+#, python-format
+msgid "Password must be at least %d characters long"
+msgstr "La contraseña debe tener al menos %d caracteres"
+
+msgid "Password must contain at least one uppercase letter"
+msgstr "La contraseña debe contener al menos una letra mayúscula"
+
+msgid "Password must contain at least one lowercase letter"
+msgstr "La contraseña debe contener al menos una letra minúscula"
+
+msgid "Password must contain at least one number"
+msgstr "La contraseña debe contener al menos un número"
+
+msgid "Balance"
+msgstr "Saldo"
+
+msgid "Metadata"
+msgstr "Metadatos"
+
+msgid "Commodity Group"
+msgstr "Grupo de materias primas"
+
+msgid "Commodity"
+msgstr "Materia prima"
+
+msgid "Notification"
+msgstr "Notificación"
+
+msgid "Transaction"
+msgstr "Transacción"
+
+msgid "Location"
+msgstr "Ubicación"
+
+msgid "User"
+msgstr "Usuario"
+
+msgid "Permissions"
+msgstr "Permisos"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Gadget"
+msgstr "Dispositivo"
+
+msgid "Dashboard"
+msgstr "Panel de control"
+
+msgid "Django site admin"
+msgstr "Administración del sitio Django"
+
+msgid "Active Traders"
+msgstr "Comerciantes activos"
+
+msgid "Last"
+msgstr "Último"
+
+msgid "days"
+msgstr "días"
+
+msgid "Total Commodities"
+msgstr "Total de materias primas"
+
+msgid "With active balances"
+msgstr "Con saldos activos"
+
+msgid "Total Registrations"
+msgstr "Total de registros"
+
+msgid "All time users"
+msgstr "Usuarios de todos los tiempos"
+
+msgid "Current Seasons"
+msgstr "Temporadas actuales"
+
+msgid "Active harvest seasons"
+msgstr "Temporadas de cosecha activas"
+
+msgid "Transactions by Traceability Status"
+msgstr "Transacciones por estado de trazabilidad"
+
+msgid "Transactions by Season"
+msgstr "Transacciones por temporada"
+
+msgid "Daily Registrations Over Time"
+msgstr "Registros diarios a lo largo del tiempo"
+
+msgid "Daily Transactions by Season"
+msgstr "Transacciones diarias por temporada"
+
+msgid "Balance Summary by Commodity"
+msgstr "Resumen de saldos por materia prima"
+
+msgid "Code"
+msgstr "Código"
+
+msgid "Name"
+msgstr "Nombre"
+
+msgid "Unit"
+msgstr "Unidad"
+
+msgid "Total Volume"
+msgstr "Volumen total"
+
+msgid "No balance data available"
+msgstr "No hay datos de saldo disponibles"
+
+msgid "Balance commodity"
+msgstr "Materia prima del saldo"
+
+msgid "Balance user"
+msgstr "Usuario del saldo"
+
+msgid "Balances"
+msgstr "Saldos"
+
+msgid "Unique identifier for this record."
+msgstr "Identificador único para este registro."
+
+msgid "Timestamp when this record was created."
+msgstr "Marca de tiempo cuando se creó este registro."
+
+msgid "Timestamp when this record was last updated."
+msgstr "Marca de tiempo de la última actualización de este registro."
+
+msgid "Name of the commodity group"
+msgstr "Nombre del grupo de materias primas"
+
+msgid "Commodity Groups"
+msgstr "Grupos de materias primas"
+
+msgid "Commodity code"
+msgstr "Código de la materia prima"
+
+msgid "Name of the commodity"
+msgstr "Nombre de la materia prima"
+
+msgid "Unit of measurement"
+msgstr "Unidad de medida"
+
+msgid "Commodity group"
+msgstr "Grupo de materias primas"
+
+msgid "Commodities"
+msgstr "Materias primas"
+
+msgid "Notification data"
+msgstr "Datos de notificación"
+
+msgid "Status of the notification"
+msgstr "Estado de la notificación"
+
+msgid "Type of notification"
+msgstr "Tipo de notificación"
+
+msgid "User who received this notification"
+msgstr "Usuario que recibió esta notificación"
+
+msgid "User who created this notification"
+msgstr "Usuario que creó esta notificación"
+
+msgid "Notifications"
+msgstr "Notificaciones"
+
+msgid "User who owns this notification settings"
+msgstr "Usuario propietario de esta configuración de notificaciones"
+
+msgid "Indicates whether notifications of this type are enabled"
+msgstr "Indica si las notificaciones de este tipo están habilitadas"
+
+msgid "Notification Settings"
+msgstr "Configuración de notificaciones"
+
+msgid "Season"
+msgstr "Temporada"
+
+msgid "Seasons"
+msgstr "Temporadas"
+
+msgid "Season Commodity"
+msgstr "Producto básico de temporada"
+
+msgid "Season Commodities"
+msgstr "Productos básicos de temporada"
+
+msgid "Name of the season"
+msgstr "Nombre de la temporada"
+
+msgid "Description of the season"
+msgstr "Descripción de la temporada"
+
+msgid "Start date of the season"
+msgstr "Fecha de inicio de la temporada"
+
+msgid "End date of the season"
+msgstr "Fecha de finalización de la temporada"
+
+msgid "Commodities participating in this season"
+msgstr "Productos básicos participantes en esta temporada"
+
+msgid "Type of transaction"
+msgstr "Tipo de transacción"
+
+msgid "Source of location geodata"
+msgstr "Fuente de datos geográficos de ubicación"
+
+msgid "Status of the transaction"
+msgstr "Estado de la transacción"
+
+msgid "Traceability status of the transaction"
+msgstr "Estado de trazabilidad de la transacción"
+
+msgid "Transaction latitude coordinate"
+msgstr "Coordenada de latitud de la transacción"
+
+msgid "Transaction longitude coordinate"
+msgstr "Coordenada de longitud de la transacción"
+
+msgid "Farm latitude coordinate"
+msgstr "Coordenada de latitud de la granja"
+
+msgid "Farm longitude coordinate"
+msgstr "Coordenada de longitud de la granja"
+
+msgid "Commodity being traded"
+msgstr "Materia prima que se está comerciando"
+
+msgid "Volume of commodities"
+msgstr "Volumen de materias primas"
+
+msgid "Seller in this transaction"
+msgstr "Vendedor en esta transacción"
+
+msgid "Buyer in this transaction"
+msgstr "Comprador en esta transacción"
+
+msgid "User who created this transaction"
+msgstr "Usuario que creó esta transacción"
+
+msgid "Season this transaction belongs to"
+msgstr "Temporada a la que pertenece esta transacción"
+
+msgid "Whether this transaction is buying from a farmer directly"
+msgstr "Si esta transacción está comprando directamente de un agricultor"
+
+msgid "Whether this transaction was created automatically"
+msgstr "Si esta transacción fue creada automáticamente"
+
+msgid "When this transaction expires"
+msgstr "Cuándo expira esta transacción"
+
+msgid "Transactions"
+msgstr "Transacciones"
+
+msgid "Indicates whether this user has been soft deleted"
+msgstr "Indica si este usuario ha sido eliminado suavemente"
+
+msgid "Users"
+msgstr "Usuarios"
+
+msgid "Type of contact method (phone or email)"
+msgstr "Tipo de método de contacto (teléfono o email)"
+
+msgid "Contact identifier (e.g. email address or phone number)"
+msgstr "Identificador de contacto (ej: dirección de email o número de teléfono)"
+
+msgid "Indicates whether this contact method has been verified by the user"
+msgstr "Indica si este método de contacto ha sido verificado por el usuario"
+
+msgid "The user this gadget belongs to"
+msgstr "El usuario al que pertenece este dispositivo"
+
+msgid "Gadgets"
+msgstr "Dispositivos"
+
+msgid "Invalid update status"
+msgstr "Estado de actualización no válido"
+
+msgid "Device with this token already exists"
+msgstr "Ya existe un dispositivo con este token"
+
+msgid "Notification status updated"
+msgstr "Estado de notificación actualizado"
+
+msgid "Notification settings updated"
+msgstr "Configuración de notificaciones actualizada"
+
+msgid "Device added"
+msgstr "Dispositivo añadido"
+
+msgid "Service is healthy"
+msgstr "El servicio está funcionando correctamente"
+
+msgid "Navigation"
+msgstr "Navegación"
+
+msgid "Periodic Tasks"
+msgstr "Tareas periódicas"
+
+msgid "User Management"
+msgstr "Gestión de usuarios"
+
+msgid "Trading"
+msgstr "Comercio"
+
+msgid "Commodity group is required"
+msgstr "El grupo de materias primas es requerido"
+
+msgid "Only accepted status is allowed"
+msgstr "Solo se permite el estado aceptado"
+
+msgid "Location must be complete or must be empty"
+msgstr "La ubicación debe estar completa o vacía"
+
+msgid "Location file must be provided for this location type"
+msgstr "El archivo de ubicación debe ser proporcionado para este tipo de ubicación"
+
+msgid "Location file is not supported for this location type"
+msgstr "El archivo de ubicación no es compatible con este tipo de ubicación"
+
+msgid "Location file syntax is invalid"
+msgstr "La sintaxis del archivo de ubicación no es válida"
+
+msgid "Transaction can only be accepted or rejected"
+msgstr "La transacción solo puede ser aceptada o rechazada"
+
+msgid "Transaction recipient cannot be the same as the user"
+msgstr "El destinatario de la transacción no puede ser el mismo que el usuario"
+
+msgid "Transaction recipient is not specified"
+msgstr "El destinatario de la transacción no está especificado"
+
+msgid "Location file upload error"
+msgstr "Error al cargar el archivo de ubicación"
+
+msgid "Location file download error"
+msgstr "Error al descargar el archivo de ubicación"
+
+msgid "Transaction recipient data must contain only one identifier at a time"
+msgstr "Los datos del destinatario de la transacción deben contener solo un identificador a la vez"
+
+msgid "Latitude must be between -90 and 90 degrees"
+msgstr "La latitud debe estar entre -90 y 90 grados"
+
+msgid "Longitude must be between -180 and 180 degrees"
+msgstr "La longitud debe estar entre -180 y 180 grados"
+
+msgid "Transaction status updated"
+msgstr "Estado de la transacción actualizado"
+
+msgid "Transaction geodata updated"
+msgstr "Datos geográficos de la transacción actualizados"
+
+msgid "Missing geodata requested"
+msgstr "Datos geográficos faltantes solicitados"
+
+msgid "Transaction notification resent"
+msgstr "Notificación de transacción reenviada"
+
+msgid "Conversion completed successfully"
+msgstr "Conversión completada exitosamente"
+
+msgid "Welcome to LACRA!"
+msgstr "¡Bienvenido a LACRA!"
+
+msgid "You have been invited to Lacra!"
+msgstr "¡Has sido invitado a Lacra!"
+
+msgid "Current password is incorrect"
+msgstr "La contraseña actual es incorrecta"
+
+msgid "Email sending error"
+msgstr "Error al enviar email"
+
+msgid "SMS sending error"
+msgstr "Error al enviar SMS"
+
+msgid "Cannot delete the last verified gadget"
+msgstr "No se puede eliminar el último dispositivo verificado"
+
+msgid "Exactly one identifier must be specified"
+msgstr "Debe especificarse exactamente un identificador"
+
+msgid "Gadget exists"
+msgstr "El dispositivo existe"
+
+msgid "Gadget deleted"
+msgstr "Dispositivo eliminado"
+
+msgid "Password changed"
+msgstr "Contraseña cambiada"
+
+msgid "Profile deleted"
+msgstr "Perfil eliminado"

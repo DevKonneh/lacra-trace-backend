@@ -1,0 +1,830 @@
+from decimal import Decimal
+from http import HTTPStatus
+
+import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
+from freezegun.api import FrozenDateTimeFactory
+from syrupy import SnapshotAssertion
+
+from tests.factories.balances import BalanceFactory
+from tests.factories.commodities import CommodityFactory
+from tests.factories.conversions import ConversionInputFactory, ConversionOutputFactory, ConversionRecipeFactory
+from tests.factories.transactions import TransactionFactory
+from tests.factories.users import UserFactory
+from tests.helpers.clients import APIClient
+from tests.helpers.constants import DEFAULT_DATETIME
+from tests.helpers.utils import queries_to_str
+from lacra.common.schemas.base import DataResponse
+from lacra.db.enums import TransactionStatus, TransactionType
+from lacra.db.enums.transactions import TransactionTraceability
+from lacra.db.models import Transaction
+from lacra.transactions.schemas.dto import TraceabilityCountsDTO
+
+pytestmark = [pytest.mark.django_db]
+
+
+class TestTransactionsTraceabilityCounts:
+    URL = "transactions_traceability_counts"
+
+    @pytest.mark.parametrize("traceability", TransactionTraceability)
+    def test_producer(
+        self,
+        client: APIClient,
+        traceability: TransactionTraceability,
+        freezer: FrozenDateTimeFactory,
+        snapshot: SnapshotAssertion,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        transaction = TransactionFactory.create(producer=True, buyer=user, traceability=traceability)
+
+        url = reverse(self.URL, args=(transaction.id,))
+
+        client.login(user)
+
+        # Act
+        with CaptureQueriesContext(connection) as queries:
+            response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+        assert response_json == snapshot
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        assert data_response.data.counts[traceability] == 1
+
+        # Queries:
+        # 1. select user
+        # 2. select gadgets
+        # 3. select transaction
+        # 4. select transactions level 1 traceability counts
+        # 5. select transactions level 2 ids
+        # 6. select conversion outputs
+        assert len(queries) == 6, queries_to_str(queries)  # noqa: PLR2004 Magic value used in comparison
+
+    def test_downstream(self, client: APIClient, freezer: FrozenDateTimeFactory, snapshot: SnapshotAssertion) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        commodity = CommodityFactory.create()
+
+        # seller3_1 -( full  )> seller2_1  |  seller2_1 -(conditional)> seller1_1 | seller1_1 -> user
+        # seller3_2 -( full  )> seller2_1  |  seller2_2 -(incomplete)> seller1_1  |
+        # seller3_3 -(partial)> seller2_2  |                                      |
+        # ---
+        # full = 2, conditional = 1, partial = 1, incomplete = 1
+
+        seller3_1 = UserFactory.create()
+        seller3_2 = UserFactory.create()
+        seller3_3 = UserFactory.create()
+
+        seller2_1 = UserFactory.create()
+        seller2_2 = UserFactory.create()
+
+        seller1_1 = UserFactory.create()
+
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller3_1,
+            buyer=seller2_1,
+            commodity=commodity,
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller3_2,
+            buyer=seller2_1,
+            commodity=commodity,
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller3_3,
+            buyer=seller2_2,
+            commodity=commodity,
+            traceability=TransactionTraceability.PARTIAL,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller2_1,
+            buyer=seller1_1,
+            commodity=commodity,
+            traceability=TransactionTraceability.CONDITIONAL,
+            status=TransactionStatus.ACCEPTED,
+        )
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller2_2,
+            buyer=seller1_1,
+            commodity=commodity,
+            traceability=TransactionTraceability.INCOMPLETE,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        transaction = TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller1_1,
+            buyer=user,
+            commodity=commodity,
+            traceability=None,
+            status=TransactionStatus.PENDING,
+        )
+
+        url = reverse(self.URL, args=(transaction.id,))
+
+        client.login(user)
+
+        # Act
+        with CaptureQueriesContext(connection) as queries:
+            response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+        assert response_json == snapshot
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        assert data_response.data.counts[TransactionTraceability.FULL] == 2  # noqa: PLR2004 Magic value used in comparison
+        assert data_response.data.counts[TransactionTraceability.CONDITIONAL] == 1
+        assert data_response.data.counts[TransactionTraceability.PARTIAL] == 1
+        assert data_response.data.counts[TransactionTraceability.INCOMPLETE] == 1
+
+        # Queries:
+        # 1. select user
+        # 2. select gadgets
+        # 3. select transaction
+        # 4. select transactions level 1
+        # 5. select conversion outputs level 1
+        # 6. select transactions level 2
+        # 7. select conversion outputs level 2
+        # 8. select transactions level 3
+        # 9. select conversion outputs level 3
+        # 10. select traceability counts
+        assert len(queries) == 10, queries_to_str(queries)  # noqa: PLR2004 Magic value used in comparison
+
+    def test_simple_conversion(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+        snapshot: SnapshotAssertion,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        beans = CommodityFactory.create(name="Cacao Beans")
+        oil = CommodityFactory.create(name="Cacao Oil")
+
+        # beans -> oil
+        TransactionFactory.create(
+            type=TransactionType.PRODUCER,
+            buyer=user,
+            seller=None,
+            commodity=beans,
+            volume=Decimal("100.0"),
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        BalanceFactory.create(user=user, commodity=beans, volume=Decimal("100.0"))
+
+        recipe = ConversionRecipeFactory.create(name="Beans to Oil")
+        ConversionInputFactory.create(recipe=recipe, commodity=beans, quantity=Decimal("50.0"))
+        ConversionOutputFactory.create(recipe=recipe, commodity=oil, quantity=Decimal("25.0"))
+
+        client.login(user)
+        response = client.post(
+            path=reverse("transactions_conversion"),
+            data={"recipe_id": str(recipe.id)},
+            format="json",
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        oil_transaction = Transaction.objects.get(
+            created_by_id=user.id,
+            type=TransactionType.CONVERSION,
+            commodity_id=oil.id,
+            buyer_id=user.id,
+        )
+        url = reverse(self.URL, args=(oil_transaction.id,))
+
+        # Act
+        with CaptureQueriesContext(connection) as queries:
+            response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+        assert response_json == snapshot
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        # 1 producer + 2 conversion (input + output)
+        assert data_response.data.counts[TransactionTraceability.FULL] == 3  # noqa: PLR2004 Magic value used in comparison
+        assert data_response.data.counts[TransactionTraceability.CONDITIONAL] == 0
+        assert data_response.data.counts[TransactionTraceability.PARTIAL] == 0
+        assert data_response.data.counts[TransactionTraceability.INCOMPLETE] == 0
+
+        # Queries:
+        # 1. select user
+        # 2. select gadgets
+        # 3. select transaction
+        # 4. select transactions level 1
+        # 5. select conversion outputs level 1
+        # 6. select conversion inputs level 1
+        # 7. select transactions level 2
+        # 8. select conversion outputs level 2
+        # 9. select transactions level 3
+        # 10. select conversion outputs level 3
+        # 11. select traceability counts
+        assert len(queries) == 11, queries_to_str(queries)  # noqa: PLR2004 Magic value used in comparison
+
+    def test_multilevel_conversion(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+        snapshot: SnapshotAssertion,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        beans = CommodityFactory.create(name="Cacao Beans")
+        oil = CommodityFactory.create(name="Cacao Oil")
+        chocolate = CommodityFactory.create(name="Chocolate")
+
+        # beans -> oil -> chocolate
+        TransactionFactory.create(
+            type=TransactionType.PRODUCER,
+            buyer=user,
+            seller=None,
+            commodity=beans,
+            volume=Decimal("200.0"),
+            traceability=TransactionTraceability.CONDITIONAL,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        BalanceFactory.create(user=user, commodity=beans, volume=Decimal("200.0"))
+
+        recipe1 = ConversionRecipeFactory.create(name="Beans to Oil")
+        ConversionInputFactory.create(recipe=recipe1, commodity=beans, quantity=Decimal("100.0"))
+        ConversionOutputFactory.create(recipe=recipe1, commodity=oil, quantity=Decimal("50.0"))
+
+        client.login(user)
+        response = client.post(
+            path=reverse("transactions_conversion"),
+            data={"recipe_id": str(recipe1.id)},
+            format="json",
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        recipe2 = ConversionRecipeFactory.create(name="Oil to Chocolate")
+        ConversionInputFactory.create(recipe=recipe2, commodity=oil, quantity=Decimal("25.0"))
+        ConversionOutputFactory.create(recipe=recipe2, commodity=chocolate, quantity=Decimal("10.0"))
+
+        response = client.post(
+            path=reverse("transactions_conversion"),
+            data={"recipe_id": str(recipe2.id)},
+            format="json",
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        chocolate_transaction = Transaction.objects.get(
+            created_by_id=user.id,
+            type=TransactionType.CONVERSION,
+            commodity_id=chocolate.id,
+            buyer_id=user.id,
+        )
+        url = reverse(self.URL, args=(chocolate_transaction.id,))
+
+        # Act
+        with CaptureQueriesContext(connection) as queries:
+            response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+        assert response_json == snapshot
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        # 1 producer + 2 conversion (beans->oil) + 2 conversion (oil->chocolate)
+        assert data_response.data.counts[TransactionTraceability.CONDITIONAL] == 5  # noqa: PLR2004 Magic value used in comparison
+        assert data_response.data.counts[TransactionTraceability.FULL] == 0
+        assert data_response.data.counts[TransactionTraceability.PARTIAL] == 0
+        assert data_response.data.counts[TransactionTraceability.INCOMPLETE] == 0
+
+        # Queries:
+        # 1. select user
+        # 2. select gadgets
+        # 3. select transaction
+        # 4. select transactions level 1
+        # 5. select conversion outputs level 1
+        # 6. select conversion inputs level 1
+        # 7. select transactions level 2
+        # 8. select conversion outputs level 2
+        # 9. select transactions level 3
+        # 10. select conversion outputs level 3
+        # 11. select conversion inputs level 3
+        # 12. select transactions level 4
+        # 13. select conversion outputs level 4
+        # 14. select transactions level 5
+        # 15. select conversion outputs level 5
+        # 16. select traceability counts
+        assert len(queries) == 16, queries_to_str(queries)  # noqa: PLR2004 Magic value used in comparison
+
+    def test_conversion_multiple_inputs(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+        snapshot: SnapshotAssertion,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        beans = CommodityFactory.create(name="Cacao Beans")
+        sugar = CommodityFactory.create(name="Sugar")
+        chocolate = CommodityFactory.create(name="Chocolate")
+
+        # beans + sugar -> chocolate
+        TransactionFactory.create(
+            type=TransactionType.PRODUCER,
+            buyer=user,
+            seller=None,
+            commodity=beans,
+            volume=Decimal("100.0"),
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+        TransactionFactory.create(
+            type=TransactionType.PRODUCER,
+            buyer=user,
+            seller=None,
+            commodity=sugar,
+            volume=Decimal("50.0"),
+            traceability=TransactionTraceability.PARTIAL,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        BalanceFactory.create(user=user, commodity=beans, volume=Decimal("100.0"))
+        BalanceFactory.create(user=user, commodity=sugar, volume=Decimal("50.0"))
+
+        recipe = ConversionRecipeFactory.create(name="Beans + Sugar to Chocolate")
+        ConversionInputFactory.create(recipe=recipe, commodity=beans, quantity=Decimal("50.0"))
+        ConversionInputFactory.create(recipe=recipe, commodity=sugar, quantity=Decimal("25.0"))
+        ConversionOutputFactory.create(recipe=recipe, commodity=chocolate, quantity=Decimal("30.0"))
+
+        client.login(user)
+        response = client.post(
+            path=reverse("transactions_conversion"),
+            data={"recipe_id": str(recipe.id)},
+            format="json",
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        chocolate_transaction = Transaction.objects.get(
+            created_by_id=user.id,
+            type=TransactionType.CONVERSION,
+            commodity_id=chocolate.id,
+            buyer_id=user.id,
+        )
+        url = reverse(self.URL, args=(chocolate_transaction.id,))
+
+        # Act
+        with CaptureQueriesContext(connection) as queries:
+            response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+        assert response_json == snapshot
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        # beans producer (FULL) + sugar producer (PARTIAL) + 3 conversion transactions (all PARTIAL due to min)
+        assert data_response.data.counts[TransactionTraceability.FULL] == 1
+        assert data_response.data.counts[TransactionTraceability.PARTIAL] == 4  # noqa: PLR2004 Magic value used in comparison
+        assert data_response.data.counts[TransactionTraceability.CONDITIONAL] == 0
+        assert data_response.data.counts[TransactionTraceability.INCOMPLETE] == 0
+
+        # Queries:
+        # 1. select user
+        # 2. select gadgets
+        # 3. select transaction
+        # 4. select transactions level 1
+        # 5. select conversion outputs level 1
+        # 6. select conversion inputs level 1
+        # 7. select transactions level 2
+        # 8. select conversion outputs level 2
+        # 9. select transactions level 3
+        # 10. select conversion outputs level 3
+        # 11. select traceability counts
+        assert len(queries) == 11, queries_to_str(queries)  # noqa: PLR2004 Magic value used in comparison
+
+    def test_conversion_does_not_include_unrelated_purchases(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        beans = CommodityFactory.create(name="Cacao Beans")
+        sugar = CommodityFactory.create(name="Sugar")
+        oil = CommodityFactory.create(name="Cacao Oil")
+
+        # beans -> oil, but user also has a sugar producer (noise)
+        TransactionFactory.create(
+            type=TransactionType.PRODUCER,
+            buyer=user,
+            seller=None,
+            commodity=beans,
+            volume=Decimal("100.0"),
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+        TransactionFactory.create(
+            type=TransactionType.PRODUCER,
+            buyer=user,
+            seller=None,
+            commodity=sugar,
+            volume=Decimal("50.0"),
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        BalanceFactory.create(user=user, commodity=beans, volume=Decimal("100.0"))
+
+        recipe = ConversionRecipeFactory.create(name="Beans to Oil")
+        ConversionInputFactory.create(recipe=recipe, commodity=beans, quantity=Decimal("50.0"))
+        ConversionOutputFactory.create(recipe=recipe, commodity=oil, quantity=Decimal("25.0"))
+
+        client.login(user)
+        response = client.post(
+            path=reverse("transactions_conversion"),
+            data={"recipe_id": str(recipe.id)},
+            format="json",
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        oil_transaction = Transaction.objects.get(
+            created_by_id=user.id,
+            type=TransactionType.CONVERSION,
+            commodity_id=oil.id,
+            buyer_id=user.id,
+        )
+        url = reverse(self.URL, args=(oil_transaction.id,))
+
+        # Act
+        with CaptureQueriesContext(connection) as queries:
+            response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        # 1 beans producer + 2 conversion (input + output). Sugar producer must NOT be counted.
+        assert data_response.data.counts[TransactionTraceability.FULL] == 3  # noqa: PLR2004 Magic value used in comparison
+        assert data_response.data.counts[TransactionTraceability.CONDITIONAL] == 0
+        assert data_response.data.counts[TransactionTraceability.PARTIAL] == 0
+        assert data_response.data.counts[TransactionTraceability.INCOMPLETE] == 0
+
+        # Queries:
+        # 1. select user
+        # 2. select gadgets
+        # 3. select transaction
+        # 4. select transactions level 1
+        # 5. select conversion outputs level 1
+        # 6. select conversion inputs level 1
+        # 7. select transactions level 2
+        # 8. select conversion outputs level 2
+        # 9. select transactions level 3
+        # 10. select conversion outputs level 3
+        # 11. select traceability counts
+        assert len(queries) == 11, queries_to_str(queries)  # noqa: PLR2004 Magic value used in comparison
+
+    def test_downstream_with_conversion(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        jonas = UserFactory.create()
+        farmer = UserFactory.create()
+        noise_seller = UserFactory.create()
+
+        palm_oil = CommodityFactory.create(name="Palm Oil")
+        oilcake = CommodityFactory.create(name="Oilcake")
+        noise_commodity = CommodityFactory.create(name="Noise Commodity")
+
+        # farmer -> jonas (palm_oil), jonas converts palm_oil -> oilcake, jonas -> user (oilcake)
+        # jonas also has an unrelated purchase (noise) that must NOT appear in the chain
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=farmer,
+            buyer=jonas,
+            commodity=palm_oil,
+            volume=Decimal("5000.0"),
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=noise_seller,
+            buyer=jonas,
+            commodity=noise_commodity,
+            volume=Decimal("100.0"),
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        BalanceFactory.create(user=jonas, commodity=palm_oil, volume=Decimal("5000.0"))
+
+        recipe = ConversionRecipeFactory.create(name="Palm Oil to Oilcake")
+        ConversionInputFactory.create(recipe=recipe, commodity=palm_oil, quantity=Decimal("5000.0"))
+        ConversionOutputFactory.create(recipe=recipe, commodity=oilcake, quantity=Decimal("5000.0"))
+
+        client.login(jonas)
+        response = client.post(
+            path=reverse("transactions_conversion"),
+            data={"recipe_id": str(recipe.id)},
+            format="json",
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        Transaction.objects.get(
+            created_by_id=jonas.id,
+            type=TransactionType.CONVERSION,
+            commodity_id=oilcake.id,
+            buyer_id=jonas.id,
+        )
+
+        transaction = TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=jonas,
+            buyer=user,
+            commodity=oilcake,
+            volume=Decimal("5000.0"),
+            traceability=None,
+            status=TransactionStatus.PENDING,
+            created_by=jonas,
+        )
+
+        BalanceFactory.create(user=jonas, commodity=oilcake, volume=Decimal("5000.0"))
+        BalanceFactory.create(user=user, commodity=oilcake, volume=Decimal("5000.0"))
+
+        url = reverse(self.URL, args=(transaction.id,))
+
+        client.login(user)
+
+        # Act
+        with CaptureQueriesContext(connection) as queries:
+            response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        # conv_out (FULL) + conv_in (FULL) + farmer->jonas (FULL) = 3 FULL
+        # Noise purchase by jonas must NOT be counted
+        assert data_response.data.counts[TransactionTraceability.FULL] == 3  # noqa: PLR2004 Magic value used in comparison
+        assert data_response.data.counts[TransactionTraceability.CONDITIONAL] == 0
+        assert data_response.data.counts[TransactionTraceability.PARTIAL] == 0
+        assert data_response.data.counts[TransactionTraceability.INCOMPLETE] == 0
+
+        # Queries:
+        # 1. select user
+        # 2. select gadgets
+        # 3. select transaction
+        # 4. select transactions level 1 (user buys oilcake from jonas -> upstream buyer=jonas, commodity=oilcake)
+        # 5. select conversion outputs level 1
+        # 6. select transactions level 2 (conv_out has seller=None -> empty)
+        # 7. select conversion outputs level 2 (conv_out found)
+        # 8. select conversion inputs level 2
+        # 9. select transactions level 3 (conv_in -> upstream buyer=jonas, commodity=palm_oil)
+        # 10. select conversion outputs level 3
+        # 11. select transactions level 4 (farmer->jonas -> upstream buyer=farmer -> empty)
+        # 12. select conversion outputs level 4
+        # 13. select traceability counts
+        assert len(queries) == 13, queries_to_str(queries)  # noqa: PLR2004 Magic value used in comparison
+
+    def test_excludes_upstream_transactions_added_after_leaf(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        commodity = CommodityFactory.create()
+
+        seller2 = UserFactory.create()
+        seller1 = UserFactory.create()
+        late_seller = UserFactory.create()
+
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller2,
+            buyer=seller1,
+            commodity=commodity,
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+        leaf = TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller1,
+            buyer=user,
+            commodity=commodity,
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        freezer.tick(delta=60)
+        TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=late_seller,
+            buyer=seller1,
+            commodity=commodity,
+            traceability=TransactionTraceability.INCOMPLETE,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        url = reverse(self.URL, args=(leaf.id,))
+
+        client.login(user)
+
+        # Act
+        response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        assert data_response.data.counts[TransactionTraceability.FULL] == 2  # noqa: PLR2004 Magic value used in comparison
+        assert data_response.data.counts[TransactionTraceability.INCOMPLETE] == 0
+        assert data_response.data.counts[TransactionTraceability.CONDITIONAL] == 0
+        assert data_response.data.counts[TransactionTraceability.PARTIAL] == 0
+
+    def test_includes_upstream_whose_updated_at_was_bumped_after_leaf(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        commodity = CommodityFactory.create()
+
+        seller2 = UserFactory.create()
+        seller1 = UserFactory.create()
+
+        upstream = TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller2,
+            buyer=seller1,
+            commodity=commodity,
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+        leaf = TransactionFactory.create(
+            type=TransactionType.DOWNSTREAM,
+            seller=seller1,
+            buyer=user,
+            commodity=commodity,
+            traceability=TransactionTraceability.FULL,
+            status=TransactionStatus.ACCEPTED,
+        )
+
+        freezer.tick(delta=60)
+        upstream.save(update_fields=["updated_at"])
+
+        url = reverse(self.URL, args=(leaf.id,))
+
+        client.login(user)
+
+        # Act
+        response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+
+        data_response = DataResponse[TraceabilityCountsDTO](**response_json)
+
+        assert data_response.data.counts[TransactionTraceability.FULL] == 2  # noqa: PLR2004 Magic value used in comparison
+        assert data_response.data.counts[TransactionTraceability.INCOMPLETE] == 0
+        assert data_response.data.counts[TransactionTraceability.CONDITIONAL] == 0
+        assert data_response.data.counts[TransactionTraceability.PARTIAL] == 0
+
+    def test_transaction_does_not_exist(
+        self,
+        client: APIClient,
+        snapshot: SnapshotAssertion,
+    ) -> None:
+        # Arrange
+        user = UserFactory.create()
+
+        url = reverse(self.URL, args=("00000000-0000-0000-0000-000000000000",))
+
+        client.login(user)
+
+        # Act
+        response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.NOT_FOUND, response_json
+        assert response_json == snapshot
+
+    def test_transaction_not_user(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+        snapshot: SnapshotAssertion,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        transaction = TransactionFactory.create()
+
+        url = reverse(self.URL, args=(transaction.id,))
+
+        client.login(user)
+
+        # Act
+        response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.NOT_FOUND, response_json
+        assert response_json == snapshot
+
+    def test_unauthorized(self, client: APIClient, snapshot: SnapshotAssertion) -> None:
+        # Arrange
+        url = reverse(self.URL, args=("00000000-0000-0000-0000-000000000000",))
+
+        # Act
+        response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.UNAUTHORIZED, response_json
+        assert response_json == snapshot
+
+    def test_forbidden(self, client: APIClient, snapshot: SnapshotAssertion) -> None:
+        # Arrange
+        user = UserFactory.create(with_gadgets=False)
+
+        url = reverse(self.URL, args=("00000000-0000-0000-0000-000000000000",))
+
+        client.login(user)
+
+        # Act
+        response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.FORBIDDEN, response_json
+        assert response_json == snapshot
+
+    def test_user_deleted(self, client: APIClient, snapshot: SnapshotAssertion) -> None:
+        # Arrange
+        user = UserFactory.create(is_deleted=True)
+
+        url = reverse(self.URL, args=("00000000-0000-0000-0000-000000000000",))
+
+        client.login(user)
+
+        # Act
+        response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.UNAUTHORIZED, response_json
+        assert response_json == snapshot
