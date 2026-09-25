@@ -9,11 +9,13 @@ uv run --no-dev ./manage.py createsuperuser --noinput
 echo "Collect static files"
 uv run --no-dev ./manage.py collectstatic --noinput
 
-# compilemessages is skipped at runtime — it scans all Django locale files
-# and takes 10+ minutes on the free tier, causing health check timeouts.
-# Run it locally or in a build step if needed.
+# compilemessages skipped — takes 10+ minutes scanning Django locale files
 
-echo "Start gunicorn server"
-uv run --no-dev gunicorn -c ./lacra/gunicorn.conf.py lacra.common.wsgi
+echo "Start gunicorn server on port ${PORT:-8000}"
+uv run --no-dev gunicorn \
+    --bind "0.0.0.0:${PORT:-8000}" \
+    --workers "${WEB_CONCURRENCY:-2}" \
+    --timeout 120 \
+    lacra.common.wsgi
 
 exec "$@"
