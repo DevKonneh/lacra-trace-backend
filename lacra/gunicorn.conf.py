@@ -1,7 +1,10 @@
 import os
 from multiprocessing import cpu_count
 
-bind = "0.0.0.0:8000"
+# Render sets $PORT to 10000 for Docker web services.
+# Fall back to 8000 for local development.
+port = os.environ.get("PORT", "8000")
+bind = f"0.0.0.0:{port}"
 
 # Respect WEB_CONCURRENCY env var (set by Render/Heroku).
 # Default to 2 workers to stay within 512MB free-tier RAM.
