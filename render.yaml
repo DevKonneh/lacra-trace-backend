@@ -86,12 +86,15 @@ services:
         value: "False"
       - key: SMS_TELNYX_ENABLED
         value: "False"
+      # SMS_TELNYX_API_KEY and SMS_TELNYX_MESSAGING_PROFILE_ID are required
+      # by settings.py at import time (no default). Using placeholders so app
+      # starts — SMS is disabled via SMS_TELNYX_ENABLED=False anyway.
       - key: SMS_TELNYX_API_KEY
-        sync: false
+        value: "placeholder-replace-when-ready"
       - key: SMS_TELNYX_SENDER_ID
         value: LACRA
       - key: SMS_TELNYX_MESSAGING_PROFILE_ID
-        sync: false
+        value: "placeholder-replace-when-ready"
 
       - key: CAPTCHA_TURNSTILE_SECRET_KEY
         sync: false
@@ -101,10 +104,12 @@ services:
         value: smtp.gmail.com
       - key: EMAIL_PORT
         value: "587"
+      # EMAIL_HOST_PASSWORD is required by settings.py at import time (no default).
+      # Using placeholder so app starts — replace with real SMTP credentials.
       - key: EMAIL_HOST_USER
-        sync: false
+        value: "noreply@lacratrace.com"
       - key: EMAIL_HOST_PASSWORD
-        sync: false
+        value: "placeholder-replace-with-smtp-password"
       - key: DEFAULT_FROM_EMAIL
         value: noreply@lacratrace.com
       - key: EMAIL_USE_TLS
