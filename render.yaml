@@ -39,7 +39,7 @@ services:
           name: lacra-trace-db
           property: password
 
-      # Redis — fill manually in Render dashboard
+      # Redis — fill manually in Render dashboard after deploy
       - key: REDIS_HOST
         sync: false
       - key: REDIS_PASSWORD
@@ -65,7 +65,7 @@ services:
       - key: MINIO_ROOT_PASSWORD
         sync: false
 
-      # SMS (disabled by default — enable in dashboard when ready)
+      # SMS (disabled by default)
       - key: SMS_PROVIDER
         value: telnyx
       - key: SMS_GATEWAY_ENABLED
@@ -88,110 +88,6 @@ services:
         sync: false
       - key: SENTRY_ENVIRONMENT
         value: production
-
-  # ─── Celery Worker ─────────────────────────────────────────────────────────
-  # Uses Dockerfile.worker which has CMD ["uv", "run", ..., "worker"]
-  - type: worker
-    name: lacra-trace-celery-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile.worker
-    dockerContext: .
-    plan: free
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: lacra.settings
-      - key: DJANGO_SECRET_KEY
-        generateValue: true
-      - key: POSTGRES_HOST
-        fromDatabase:
-          name: lacra-trace-db
-          property: host
-      - key: POSTGRES_DB
-        fromDatabase:
-          name: lacra-trace-db
-          property: database
-      - key: POSTGRES_USER
-        fromDatabase:
-          name: lacra-trace-db
-          property: user
-      - key: POSTGRES_PASSWORD
-        fromDatabase:
-          name: lacra-trace-db
-          property: password
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PASSWORD
-        sync: false
-      - key: MINIO_HOST
-        sync: false
-      - key: MINIO_REGION
-        value: us-east-1
-      - key: MINIO_BUCKET_NAME
-        value: uploads
-      - key: MINIO_ROOT_USER
-        sync: false
-      - key: MINIO_ROOT_PASSWORD
-        sync: false
-      - key: SMS_TELNYX_API_KEY
-        sync: false
-      - key: SMS_TELNYX_SENDER_ID
-        value: LACRA
-      - key: SMS_TELNYX_MESSAGING_PROFILE_ID
-        sync: false
-      - key: CAPTCHA_TURNSTILE_SECRET_KEY
-        sync: false
-
-  # ─── Celery Beat ───────────────────────────────────────────────────────────
-  # Uses Dockerfile.beat which has CMD ["uv", "run", ..., "beat"]
-  - type: worker
-    name: lacra-trace-celery-beat
-    runtime: docker
-    dockerfilePath: ./Dockerfile.beat
-    dockerContext: .
-    plan: free
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: lacra.settings
-      - key: DJANGO_SECRET_KEY
-        generateValue: true
-      - key: POSTGRES_HOST
-        fromDatabase:
-          name: lacra-trace-db
-          property: host
-      - key: POSTGRES_DB
-        fromDatabase:
-          name: lacra-trace-db
-          property: database
-      - key: POSTGRES_USER
-        fromDatabase:
-          name: lacra-trace-db
-          property: user
-      - key: POSTGRES_PASSWORD
-        fromDatabase:
-          name: lacra-trace-db
-          property: password
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PASSWORD
-        sync: false
-      - key: MINIO_HOST
-        sync: false
-      - key: MINIO_REGION
-        value: us-east-1
-      - key: MINIO_BUCKET_NAME
-        value: uploads
-      - key: MINIO_ROOT_USER
-        sync: false
-      - key: MINIO_ROOT_PASSWORD
-        sync: false
-      - key: SMS_TELNYX_API_KEY
-        sync: false
-      - key: SMS_TELNYX_SENDER_ID
-        value: LACRA
-      - key: SMS_TELNYX_MESSAGING_PROFILE_ID
-        sync: false
-      - key: CAPTCHA_TURNSTILE_SECRET_KEY
-        sync: false
 
 # ─── PostgreSQL Database ──────────────────────────────────────────────────────
 databases:
