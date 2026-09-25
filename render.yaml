@@ -21,7 +21,7 @@ services:
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
         value: "https://lacra-trace-api.onrender.com"
 
-      # PostgreSQL — filled from the database below
+      # PostgreSQL — auto-wired from database below
       - key: POSTGRES_HOST
         fromDatabase:
           name: lacra-trace-db
@@ -39,13 +39,13 @@ services:
           name: lacra-trace-db
           property: password
 
-      # Redis — fill from your Render Redis instance
+      # Redis — fill manually in Render dashboard
       - key: REDIS_HOST
         sync: false
       - key: REDIS_PASSWORD
         sync: false
 
-      # Superuser (change after first deploy)
+      # Superuser (find generated password in Render dashboard after first deploy)
       - key: DJANGO_SUPERUSER_EMAIL
         value: admin@lacratrace.com
       - key: DJANGO_SUPERUSER_USERNAME
@@ -53,7 +53,7 @@ services:
       - key: DJANGO_SUPERUSER_PASSWORD
         generateValue: true
 
-      # S3 / MinIO — fill these in Render dashboard
+      # S3 / MinIO — fill manually in Render dashboard
       - key: MINIO_HOST
         sync: false
       - key: MINIO_REGION
@@ -65,7 +65,7 @@ services:
       - key: MINIO_ROOT_PASSWORD
         sync: false
 
-      # Optional services (set to disabled by default)
+      # SMS (disabled by default — enable in dashboard when ready)
       - key: SMS_PROVIDER
         value: telnyx
       - key: SMS_GATEWAY_ENABLED
@@ -90,21 +90,18 @@ services:
         value: production
 
   # ─── Celery Worker ─────────────────────────────────────────────────────────
+  # Uses Dockerfile.worker which has CMD ["uv", "run", ..., "worker"]
   - type: worker
     name: lacra-trace-celery-worker
     runtime: docker
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./Dockerfile.worker
     dockerContext: .
     plan: free
-    startCommand: uv run --no-dev celery -A lacra.common worker -l INFO
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: lacra.settings
       - key: DJANGO_SECRET_KEY
-        fromService:
-          name: lacra-trace-api
-          type: web
-          property: DJANGO_SECRET_KEY
+        generateValue: true
       - key: POSTGRES_HOST
         fromDatabase:
           name: lacra-trace-db
@@ -145,21 +142,18 @@ services:
         sync: false
 
   # ─── Celery Beat ───────────────────────────────────────────────────────────
+  # Uses Dockerfile.beat which has CMD ["uv", "run", ..., "beat"]
   - type: worker
     name: lacra-trace-celery-beat
     runtime: docker
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./Dockerfile.beat
     dockerContext: .
     plan: free
-    startCommand: uv run --no-dev celery -A lacra.common beat -l INFO
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: lacra.settings
       - key: DJANGO_SECRET_KEY
-        fromService:
-          name: lacra-trace-api
-          type: web
-          property: DJANGO_SECRET_KEY
+        generateValue: true
       - key: POSTGRES_HOST
         fromDatabase:
           name: lacra-trace-db
