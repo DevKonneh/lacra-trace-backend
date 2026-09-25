@@ -21,7 +21,7 @@ COPY manage.py .
 
 COPY locale locale
 
-COPY whimo whimo
+COPY lacra lacra
 
 FROM base AS production
 
@@ -31,4 +31,4 @@ COPY manage.py .
 
 COPY locale locale
 
-COPY whimo whimo
+COPY lacra lacra
