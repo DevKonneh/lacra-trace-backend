@@ -39,11 +39,15 @@ services:
           name: lacra-trace-db
           property: password
 
-      # Redis — fill manually in Render dashboard after deploy
+      # Redis — REQUIRED by settings.py at startup (no default).
+      # Set REDIS_HOST + REDIS_PASSWORD to your Redis instance after first deploy.
+      # Using placeholder values here so the container starts; replace ASAP.
       - key: REDIS_HOST
-        sync: false
+        value: "127.0.0.1"
       - key: REDIS_PASSWORD
-        sync: false
+        value: "placeholder-replace-me"
+      - key: REDIS_PORT
+        value: "6379"
 
       # Superuser (find generated password in Render dashboard after first deploy)
       - key: DJANGO_SUPERUSER_EMAIL
@@ -53,17 +57,25 @@ services:
       - key: DJANGO_SUPERUSER_PASSWORD
         generateValue: true
 
-      # S3 / MinIO — fill manually in Render dashboard
-      - key: MINIO_HOST
+      # S3 storage — settings.py reads S3_ENDPOINT_URL, S3_REGION, S3_BUCKET_NAME,
+      # S3_ACCESS_KEY, S3_SECRET_KEY. All optional (omitted = no file storage).
+      # Fill in Render dashboard when you have an S3/MinIO instance ready.
+      - key: S3_ENDPOINT_URL
         sync: false
-      - key: MINIO_REGION
+      - key: S3_REGION
         value: us-east-1
-      - key: MINIO_BUCKET_NAME
+      - key: S3_BUCKET_NAME
         value: uploads
-      - key: MINIO_ROOT_USER
+      - key: S3_ACCESS_KEY
         sync: false
-      - key: MINIO_ROOT_PASSWORD
+      - key: S3_SECRET_KEY
         sync: false
+
+      # Push notifications (disabled by default)
+      - key: PUSH_NOTIFICATIONS_FCM_ENABLED
+        value: "False"
+      - key: PUSH_NOTIFICATIONS_APNS_ENABLED
+        value: "False"
 
       # SMS (disabled by default)
       - key: SMS_PROVIDER
@@ -85,7 +97,7 @@ services:
         sync: false
 
       - key: SENTRY_DSN
-        sync: false
+        value: ""
       - key: SENTRY_ENVIRONMENT
         value: production
 
