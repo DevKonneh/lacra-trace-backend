@@ -118,6 +118,10 @@ services:
       # Gunicorn worker count — cap at 2 for free tier (512MB RAM)
       - key: WEB_CONCURRENCY
         value: "2"
+      # Render injects $PORT=10000 automatically for Docker web services.
+      # Explicitly set here so gunicorn.conf.py picks it up correctly.
+      - key: PORT
+        value: "10000"
 
       - key: SENTRY_DSN
         value: ""
