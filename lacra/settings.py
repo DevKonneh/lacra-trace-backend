@@ -4,6 +4,7 @@ from pathlib import Path
 import environ
 import firebase_admin
 import sentry_sdk
+from django.templatetags.static import static
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -64,6 +65,7 @@ INSTALLED_APPS = (
     "lacra.commodities",
     "lacra.common",
     "lacra.contrib",
+    "lacra.harvest_seasons",
     "lacra.notifications",
     "lacra.system",
     "lacra.transactions",
@@ -71,6 +73,7 @@ INSTALLED_APPS = (
 )
 
 MIDDLEWARE = (
+    "lacra.common.middleware.TestModeMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -184,7 +187,21 @@ DATABASES = {
         "PASSWORD": env.str("POSTGRES_PASSWORD"),
         "NAME": env.str("POSTGRES_DB", default="app"),
     },
+    "test_mode": {
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": env.str("POSTGRES_HOST", default="127.0.0.1"),
+        "PORT": env.int("POSTGRES_PORT", default=5432),
+        "USER": env.str("POSTGRES_USER", default="app"),
+        "PASSWORD": env.str("POSTGRES_PASSWORD"),
+        "NAME": env.str("POSTGRES_DB", default="app"),
+        "OPTIONS": {"options": "-c search_path=test_mode,public"},
+        # Same physical database as "default" - don't let the test runner create a
+        # second physical test database for this alias.
+        "TEST": {"MIRROR": "default"},
+    },
 }
+
+DATABASE_ROUTERS = ["lacra.common.db_router.TestModeRouter"]
 
 # Caching
 # ______________________________________________________________________________________________________________________
@@ -247,7 +264,7 @@ STORAGES = {
 
 OTP_LENGTH = env.int("OTP_LENGTH", default=6)
 
-OTP_EXPIRY_MINUTES = env.int("OTP_EXPIRY_MINUTES", default=5)
+OTP_EXPIRY_MINUTES = env.int("OTP_EXPIRY_MINUTES", default=15)
 
 OTP_MOCK_CODE = env.str("OTP_MOCK_CODE", default=None)
 
@@ -379,9 +396,31 @@ LACRA_TRANSACTION_EXPIRATION_DAYS = env.int("LACRA_TRANSACTION_EXPIRATION_DAYS",
 # ______________________________________________________________________________________________________________________
 
 UNFOLD = {
-    "SITE_TITLE": "LACRA Admin",
-    "SITE_HEADER": "LACRA Administration",
+    "SITE_TITLE": "LACRA Trace Admin",
+    "SITE_HEADER": "LACRA Trace Administration",
+    "SITE_SUBHEADER": "Liberia Agriculture Commodity Regulatory Authority",
     "SITE_URL": "/",
+    # Official LACRA logo on a white disc (lacra/contrib/static/lacra/). Derived from a 512px JPEG.
+    "SITE_ICON": lambda request: static("lacra/logo.png"),
+    "SITE_FAVICONS": [
+        {"rel": "icon", "sizes": "64x64", "type": "image/png", "href": lambda request: static("lacra/favicon.png")},
+    ],
+    # Primary colour scale built from the brand green #226C13 (600), which is derived from the logo.
+    "COLORS": {
+        "primary": {
+            "50": "240, 245, 238",
+            "100": "222, 233, 220",
+            "200": "189, 211, 184",
+            "300": "149, 184, 142",
+            "400": "100, 152, 90",
+            "500": "61, 126, 47",
+            "600": "34, 108, 19",
+            "700": "28, 89, 16",
+            "800": "22, 71, 13",
+            "900": "18, 56, 10",
+            "950": "11, 35, 6",
+        },
+    },
     "DASHBOARD_CALLBACK": "lacra.contrib.admin.dashboard.dashboard_callback",
     "SIDEBAR": {
         "show_search": True,
@@ -444,9 +483,9 @@ UNFOLD = {
                         "link": reverse_lazy("admin:db_conversionrecipe_changelist"),
                     },
                     {
-                        "title": _("Seasons"),
+                        "title": _("Harvest Seasons"),
                         "icon": "calendar_month",
-                        "link": reverse_lazy("admin:db_season_changelist"),
+                        "link": reverse_lazy("admin:db_harvestseason_changelist"),
                     },
                 ],
             },

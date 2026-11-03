@@ -1,14 +1,18 @@
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 from uuid import UUID
 
 from django.contrib.postgres.indexes import GinIndex
-from django.db import models
-from django.db.models import Exists, OuterRef, QuerySet, Subquery
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.db.models import Exists, OuterRef, QuerySet, Subquery, Sum
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
+from simple_history.utils import bulk_update_with_history
 
+from lacra.db.enums import HarvestSeasonStatus
 from lacra.db.models import Balance, BaseModel
+from lacra.db.models.conversions import ConversionInput
 
 COMMODITY_BALANCE_FIELD = "_balance"
 COMMODITY_HAS_RECIPE_FIELD = "_has_recipe"
@@ -16,8 +20,19 @@ _not_set = object()
 
 
 class CommodityManager(models.Manager):
-    def annotate_balances(self, user_id: UUID) -> QuerySet["Commodity"]:
-        balance_subquery = Balance.objects.filter(user_id=user_id, commodity=OuterRef("pk")).values("volume")[:1]
+    def annotate_balances(
+        self,
+        user_id: UUID,
+        harvest_season_id: UUID | None = None,
+        harvest_season_status: HarvestSeasonStatus | None = None,
+    ) -> QuerySet["Commodity"]:
+        balances = Balance.objects.filter(user_id=user_id, commodity=OuterRef("pk"))
+        if harvest_season_id:
+            balances = balances.filter(harvest_season_id=harvest_season_id)
+        if harvest_season_status:
+            balances = balances.filter(harvest_season__status=harvest_season_status)
+
+        balance_subquery = balances.values("commodity").annotate(total=Sum("volume")).values("total")
         return (
             self.annotate_has_recipe()
             .select_related("group")
@@ -25,9 +40,12 @@ class CommodityManager(models.Manager):
         )
 
     def annotate_has_recipe(self) -> QuerySet["Commodity"]:
-        from lacra.db.models import ConversionInput
-
-        has_recipe_subquery = Exists(ConversionInput.objects.filter(commodity=OuterRef("pk")))
+        recipe_inputs = (
+            ConversionInput.objects.filter(commodity=OuterRef("pk"))
+            .exclude(recipe__inputs__commodity__is_archived=True)
+            .exclude(recipe__outputs__commodity__is_archived=True)
+        )
+        has_recipe_subquery = Exists(recipe_inputs)
         return self.annotate(**{COMMODITY_HAS_RECIPE_FIELD: has_recipe_subquery})
 
 
@@ -38,6 +56,7 @@ class CommodityGroup(BaseModel):
         blank=True,
         help_text=_("Name translations keyed by language code"),
     )
+    is_archived = models.BooleanField(default=False, help_text=_("Archived groups are hidden from new data entry"))
 
     history = HistoricalRecords(
         excluded_fields=(
@@ -61,6 +80,15 @@ class CommodityGroup(BaseModel):
     def __str__(self) -> str:
         return self.name
 
+    def set_archived(self, is_archived: bool) -> None:
+        with transaction.atomic():
+            self.is_archived = is_archived
+            self.save(update_fields=["is_archived", "updated_at"])
+            commodities = list(self.commodities.exclude(is_archived=is_archived))
+            for commodity in commodities:
+                commodity.is_archived = is_archived
+            bulk_update_with_history(commodities, Commodity, ["is_archived"])
+
 
 class Commodity(BaseModel):
     code = models.CharField(max_length=20, unique=True, help_text=_("Commodity code"))
@@ -77,8 +105,37 @@ class Commodity(BaseModel):
         related_name="commodities",
         help_text=_("Commodity group"),
     )
+    is_archived = models.BooleanField(default=False, help_text=_("Archived commodities are hidden from new data entry"))
 
     objects = CommodityManager()
+
+    def clean(self) -> None:
+        super().clean()
+        if self._state.adding:
+            return
+
+        previous = Commodity.objects.get(pk=self.pk)
+        if previous.group_id != self.group_id and previous.harvest_seasons.exists():
+            raise ValidationError({"group": _("A commodity with harvest seasons cannot move to another group.")})
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        with transaction.atomic():
+            CommodityGroup.objects.select_for_update().get(pk=self.group_id)
+            self.clean()
+            super().save(*args, **kwargs)
+            through = self.harvest_seasons.through
+            seasons = (
+                through.objects.filter(commodity__group_id=self.group_id)
+                .exclude(harvest_season_id__in=self.harvest_seasons.values("pk"))
+                .order_by()
+                .values("harvest_season_id", "period", "status")
+                .distinct()
+            )
+            through.objects.bulk_create(through(commodity=self, **season) for season in seasons)
+
+    def set_archived(self, is_archived: bool) -> None:
+        self.is_archived = is_archived
+        self.save(update_fields=["is_archived", "updated_at"])
 
     @property
     def balance(self) -> Decimal | None:

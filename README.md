@@ -1,10 +1,8 @@
 [![Swagger](https://img.shields.io/badge/-Swagger-%23Clojure?style=for-the-badge&logo=swagger&logoColor=white)](docs/openapi.yaml)
-[![coverage](https://gitlab.com/lacraapp1/backend/badges/master/coverage.svg?job=test)](https://gitlab.com/lacraapp1/backend/pipelines/latest)
-[![pipeline](https://gitlab.com/lacraapp1/backend/badges/master/pipeline.svg)](https://gitlab.com/lacraapp1/backend/pipelines/latest)
 
-# 🌱️ LACRA
+# 🌱️ LACRA Trace
 
-Lacra REST API backend service
+LACRA Trace REST API backend service (Liberia Agriculture Commodity Regulatory Authority)
 
 ## 🛠️ Tech Stack
 
@@ -60,6 +58,42 @@ docker compose -f deploy/docker-compose.yaml up -d
 - 🌐 API: http://127.0.0.1:8000/api/v1/
 - 💼 Admin panel: http://127.0.0.1:8000/admin/
 - 📚 API documentation: http://127.0.0.1:8000/docs/
+
+## 🇱🇷 LACRA deployment notes
+
+This repository is the LACRA Trace backend, derived from the EFI `whimo-backend` (MIT, Copyright (c) 2025 EFI https://efi.int/ - see `LICENSE`).
+It serves the **LACRA Trace** Android app (`lr.gov.lacra.trace`). The API contract is unchanged from upstream.
+
+### Verified locally
+
+- `pytest tests`: 760 passed (Postgres 17 + Redis, 412 snapshots matched).
+- `migrate` + `migrate --database=test_mode`, `createsuperuser`, `collectstatic` and `gunicorn` start cleanly.
+- Smoke-tested over HTTP: healthcheck, registration, JWT login, profile, commodity groups, balances, `harvest-seasons/`, transactions, notifications, admin login page (LACRA branding).
+
+### Deploying on Render
+
+`render.yaml` is a Blueprint (web service + free Postgres `lacra-trace-db`). Create it from the Render dashboard (New > Blueprint)
+and fill in every variable marked `sync: false`. Notes:
+
+- The free plan has no Celery worker/beat; scheduled jobs (expiry, notifications, harvest-season tasks) do not run until `Dockerfile.worker` / `Dockerfile.beat` are deployed as separate services.
+- `REDIS_HOST` / `REDIS_PASSWORD` in `render.yaml` are placeholders. Provide a real Redis (e.g. Render Key Value) before relying on cache/Celery.
+- Free Render Postgres instances expire; use a paid instance for production data.
+- Set `DJANGO_ALLOWED_HOSTS`, `DJANGO_CORS_ALLOWED_ORIGINS`, `DJANGO_CSRF_TRUSTED_ORIGINS` to the real service hostname.
+- The Android app's `BASE_URL` must be `https://<your-host>/api/v1/` and `TEST_BASE_URL` `https://<your-host>/api/v1/test/`.
+
+### Values LACRA must supply (nothing here is invented)
+
+| Item | Variable(s) |
+| --- | --- |
+| Public API hostname | `DJANGO_ALLOWED_HOSTS`, `DJANGO_CORS_ALLOWED_ORIGINS`, `DJANGO_CSRF_TRUSTED_ORIGINS` |
+| Django secret | `DJANGO_SECRET_KEY` |
+| First admin | `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, `DJANGO_SUPERUSER_PASSWORD` |
+| SMTP | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` |
+| SMS (Telnyx) | `SMS_TELNYX_API_KEY`, `SMS_TELNYX_SENDER_ID` (alphanumeric sender IDs usually need carrier registration for Liberia), `SMS_TELNYX_MESSAGING_PROFILE_ID` |
+| Object storage (S3/MinIO) | `MINIO_*` / S3 variables in `config/.env.sample` |
+| Push (FCM) | Firebase service account at `config/firebase/fcm.json`, for the project registered with package `lr.gov.lacra.trace` |
+| Redis | `REDIS_HOST`, `REDIS_PASSWORD` |
+| Captcha (Turnstile) | see `config/.env.sample` |
 
 ## 🚧 Development
 

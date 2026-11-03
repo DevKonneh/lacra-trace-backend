@@ -1,10 +1,11 @@
 from django.utils.translation import gettext_lazy as _
 from django_stubs_ext import StrPromise
 
-from lacra.common.schemas.base import MessageResponse
+from lacra.common.schemas.base import DataResponse, MessageResponse
+from lacra.transactions.schemas.dto import TransactionStatusUpdateDTO
 
 
-class TransactionStatusUpdatedResponse(MessageResponse):
+class TransactionStatusUpdatedResponse(DataResponse[TransactionStatusUpdateDTO]):
     message: StrPromise = _("Transaction status updated")
 
 

@@ -1,6 +1,8 @@
 from decimal import Decimal
 
 from lacra.common.schemas.dto import BaseModelDTO
+from lacra.db.enums.transactions import TransactionTraceability
+from lacra.harvest_seasons.schemas.dto import HarvestSeasonDTO
 
 
 class CommodityGroupDTO(BaseModelDTO):
@@ -30,4 +32,6 @@ class CommodityGroupWithCommoditiesBalancesDTO(BaseModelDTO):
 class BalanceDTO(BaseModelDTO):
     volume: Decimal
     commodity: CommodityWithGroupDTO
+    harvest_season: HarvestSeasonDTO
+    traceability: TransactionTraceability
     has_recipe: bool

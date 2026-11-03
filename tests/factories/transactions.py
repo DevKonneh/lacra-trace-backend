@@ -31,6 +31,7 @@ class TransactionFactory(BaseFactory[Transaction]):
     farm_longitude = factory.Faker("pydecimal", min_value=-180, max_value=180, right_digits=2)
 
     commodity = factory.SubFactory("tests.factories.commodities.CommodityFactory")
+    harvest_season = factory.LazyAttribute(lambda transaction: transaction.commodity.harvest_seasons.first())
     volume = factory.Faker("pydecimal", min_value=1, max_value=1000, right_digits=2)
 
     is_buying_from_farmer = False
