@@ -10,6 +10,8 @@ from lacra.transactions.views import (
     TransactionGeodataRequestView,
     TransactionGeodataUpdateView,
     TransactionListCsvDownloadView,
+    TransactionListLocationBundleDownloadView,
+    TransactionListLocationSummaryView,
     TransactionListView,
     TransactionNotificationResendView,
     TransactionProducerCreateView,
@@ -20,6 +22,12 @@ from lacra.transactions.views import (
 urlpatterns = [
     path("", TransactionListView.as_view(), name="transactions_list"),
     path("download/csv/", TransactionListCsvDownloadView.as_view(), name="transactions_list_csv_download"),
+    path(
+        "download/bundle/",
+        TransactionListLocationBundleDownloadView.as_view(),
+        name="transactions_list_bundle_download",
+    ),
+    path("download/summary/", TransactionListLocationSummaryView.as_view(), name="transactions_list_summary"),
     path("producer/", TransactionProducerCreateView.as_view(), name="transactions_producer_create"),
     path("downstream/", TransactionDownstreamCreateView.as_view(), name="transactions_downstream_create"),
     path("conversion/", ConversionView.as_view(), name="transactions_conversion"),

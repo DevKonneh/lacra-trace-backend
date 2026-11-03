@@ -4,7 +4,7 @@
     'code': 'api.not_found',
     'errors': dict({
       'gadget': list([
-        'john@whimo.com',
+        'john@lacra.com',
       ]),
     }),
     'message': 'Object Not Found',

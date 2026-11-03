@@ -11,6 +11,7 @@ from lacra.commodities.mappers.commodities import CommoditiesMapper
 from lacra.db.enums import TransactionAction, TransactionLocation, TransactionStatus, TransactionType
 from lacra.db.enums.transactions import TransactionTraceability
 from lacra.db.models import ConversionRecipe, Transaction
+from lacra.harvest_seasons.mappers import HarvestSeasonsMapper
 from lacra.transactions.schemas.dto import ConversionDTO, ConversionRecipeDTO, TransactionDTO
 from lacra.transactions.schemas.requests import TransactionDownstreamCreateRequest, TransactionProducerCreateRequest
 from lacra.users.mappers.users import UsersMapper
@@ -49,7 +50,9 @@ class TransactionsMapper:
             farm_longitude=entity.farm_longitude,
             # ---
             commodity=commodity,
+            harvest_season=HarvestSeasonsMapper.to_dto(entity.harvest_season),
             volume=entity.volume,
+            signed_volume=-abs(entity.volume) if action == TransactionAction.SELLING else abs(entity.volume),
             # ---
             is_buying_from_farmer=entity.is_buying_from_farmer,
             is_automatic=entity.is_automatic,
@@ -69,6 +72,7 @@ class TransactionsMapper:
     def from_producer_request(
         user_id: UUID,
         traceability: TransactionTraceability,
+        harvest_season_id: UUID,
         request: TransactionProducerCreateRequest,
     ) -> Transaction:
         return Transaction(
@@ -85,6 +89,7 @@ class TransactionsMapper:
             farm_longitude=request.farm_longitude,
             # ---
             commodity_id=request.commodity_id,
+            harvest_season_id=harvest_season_id,
             volume=request.volume,
             # ---
             is_buying_from_farmer=request.is_buying_from_farmer,
@@ -101,6 +106,7 @@ class TransactionsMapper:
         user_id: UUID,
         seller_id: UUID | None,
         buyer_id: UUID | None,
+        harvest_season_id: UUID,
         request: TransactionDownstreamCreateRequest,
     ) -> Transaction:
         return Transaction(
@@ -117,6 +123,7 @@ class TransactionsMapper:
             farm_longitude=None,
             # ---
             commodity_id=request.commodity_id,
+            harvest_season_id=harvest_season_id,
             volume=request.volume,
             # ---
             is_buying_from_farmer=False,
@@ -132,6 +139,7 @@ class TransactionsMapper:
     def to_automatic_transaction(
         user_id: UUID,
         commodity_id: UUID,
+        harvest_season_id: UUID,
         negative_volume: Decimal,
     ) -> Transaction:
         return Transaction(
@@ -148,6 +156,7 @@ class TransactionsMapper:
             farm_latitude=None,
             # ---
             commodity_id=commodity_id,
+            harvest_season_id=harvest_season_id,
             volume=-negative_volume,
             # ---
             is_buying_from_farmer=False,
@@ -163,6 +172,7 @@ class TransactionsMapper:
     def to_conversion_transaction(  # noqa: PLR0913 Too many arguments in function definition
         user_id: UUID,
         commodity_id: UUID,
+        harvest_season_id: UUID,
         volume: Decimal,
         traceability: TransactionTraceability,
         is_input: bool,
@@ -183,6 +193,7 @@ class TransactionsMapper:
             farm_latitude=None,
             # ---
             commodity_id=commodity_id,
+            harvest_season_id=harvest_season_id,
             volume=-volume if is_input else volume,
             # ---
             is_buying_from_farmer=False,

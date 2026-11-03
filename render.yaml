@@ -50,8 +50,9 @@ services:
         value: "6379"
 
       # Superuser (find generated password in Render dashboard after first deploy)
+      # Set the admin e-mail in the Render dashboard (not invented here).
       - key: DJANGO_SUPERUSER_EMAIL
-        value: admin@lacratrace.com
+        sync: false
       - key: DJANGO_SUPERUSER_USERNAME
         value: admin
       - key: DJANGO_SUPERUSER_PASSWORD
@@ -106,12 +107,13 @@ services:
         value: "587"
       # EMAIL_HOST_PASSWORD is required by settings.py at import time (no default).
       # Using placeholder so app starts — replace with real SMTP credentials.
+      # Real SMTP account and sender address: set in the Render dashboard.
       - key: EMAIL_HOST_USER
-        value: "noreply@lacratrace.com"
+        sync: false
       - key: EMAIL_HOST_PASSWORD
         value: "placeholder-replace-with-smtp-password"
       - key: DEFAULT_FROM_EMAIL
-        value: noreply@lacratrace.com
+        sync: false
       - key: EMAIL_USE_TLS
         value: "True"
 
