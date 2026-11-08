@@ -3,11 +3,11 @@ from http import HTTPStatus
 import pytest
 from django.urls import reverse
 
+from lacra.contrib.admin.notifications import NotificationAdmin
+from lacra.db.enums.notifications import NotificationType
 from tests.factories.notifications import NotificationFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import AdminClient
-from lacra.contrib.admin.notifications import NotificationAdmin
-from lacra.db.enums.notifications import NotificationType
 
 pytestmark = [pytest.mark.django_db]
 

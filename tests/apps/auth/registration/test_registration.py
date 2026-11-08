@@ -4,12 +4,12 @@ import pytest
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import GadgetFactory
-from tests.helpers.clients import APIClient
-from tests.helpers.constants import USER_EMAIL, USER_PASSWORD, USER_PHONE
 from lacra.auth.registration.schemas.requests import RegistrationRequest
 from lacra.db.enums import GadgetType
 from lacra.db.models import Gadget, User
+from tests.factories.users import GadgetFactory
+from tests.helpers.clients import APIClient
+from tests.helpers.constants import USER_EMAIL, USER_PASSWORD, USER_PHONE
 
 pytestmark = [pytest.mark.django_db]
 

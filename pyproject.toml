@@ -32,6 +32,7 @@ dependencies = [
     "django-push-notifications[apns-async,fcm]>=3.2.1",
     "sentry-sdk[django]>=2.34.1",
     "telnyx>=4,<5",
+    "whitenoise>=6.12.0",
 ]
 package-mode = false
 

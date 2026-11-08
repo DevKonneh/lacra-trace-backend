@@ -6,10 +6,10 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
+from lacra.db.models import Gadget
 from tests.factories.users import GadgetFactory, UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.utils import queries_to_str
-from lacra.db.models import Gadget
 
 pytestmark = [pytest.mark.django_db]
 

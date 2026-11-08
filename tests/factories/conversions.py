@@ -1,9 +1,9 @@
 import factory
 import pytest
 
+from lacra.db.models import ConversionInput, ConversionOutput, ConversionRecipe
 from tests.factories.base import BaseFactory
 from tests.factories.commodities import CommodityFactory
-from lacra.db.models import ConversionInput, ConversionOutput, ConversionRecipe
 
 
 class ConversionRecipeFactory(BaseFactory[ConversionRecipe]):

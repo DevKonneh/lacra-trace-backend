@@ -13,15 +13,16 @@ from pytest_mock import MockerFixture
 from syrupy import SnapshotAssertion
 from syrupy.filters import props
 
-from tests.factories.commodities import CommodityFactory
-from tests.factories.users import GadgetFactory, UserFactory
-from tests.helpers.clients import APIClient
-from tests.helpers.constants import DEFAULT_DATETIME, USER_EMAIL, USER_PHONE
 from lacra.auth.registration.services import RegistrationService
 from lacra.db.enums import GadgetType, TransactionAction, TransactionLocation, TransactionStatus, TransactionType
 from lacra.db.enums.notifications import NotificationStatus, NotificationType
 from lacra.db.models import Gadget, Notification, Transaction
 from lacra.transactions.schemas.requests import TransactionDownstreamCreateRequest
+from tests.factories.commodities import CommodityFactory
+from tests.factories.harvest_seasons import HarvestSeasonFactory
+from tests.factories.users import GadgetFactory, UserFactory
+from tests.helpers.clients import APIClient
+from tests.helpers.constants import DEFAULT_DATETIME, USER_EMAIL, USER_PHONE
 
 pytestmark = [pytest.mark.django_db]
 
@@ -50,6 +51,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "location": location,
             "transaction_latitude": 0,
@@ -123,6 +125,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": action,
             "recipient": json.dumps({"name": recipient.username}),
@@ -160,6 +163,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": action,
         }
@@ -201,6 +205,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": action,
             "recipient": json.dumps({"email": USER_EMAIL}),
@@ -233,8 +238,8 @@ class TestTransactionsDownstreamCreate:
         # Verify invite email was sent to newly created recipient
         mock_invite_email.assert_called_once_with(
             recipients=[USER_EMAIL],
-            subject="Welcome to LACRA!",
-            message="You have been invited to Lacra!",
+            subject="Welcome to LACRA Trace!",
+            message="You have been invited to LACRA Trace!",
         )
 
     @pytest.mark.parametrize("action", TransactionAction)
@@ -254,6 +259,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": action,
             "recipient": json.dumps({"email": USER_EMAIL}),
@@ -301,6 +307,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": action,
             "recipient": json.dumps({"phone": USER_PHONE}),
@@ -332,7 +339,7 @@ class TestTransactionsDownstreamCreate:
 
         mock_invite_sms.assert_called_once_with(
             recipient=USER_PHONE.lstrip("+"),
-            message="You have been invited to Lacra!",
+            message="You have been invited to LACRA Trace!",
         )
 
     @pytest.mark.parametrize("action", TransactionAction)
@@ -352,6 +359,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": action,
             "recipient": json.dumps({"phone": USER_PHONE}),
@@ -396,6 +404,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": TransactionAction.BUYING,
             "recipient": json.dumps({"name": recipient.username}),
@@ -413,6 +422,39 @@ class TestTransactionsDownstreamCreate:
         assert response.status_code == HTTPStatus.BAD_REQUEST, response_json
         assert response_json == snapshot
 
+    def test_deleted_recipient_by_user_id(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+        snapshot: SnapshotAssertion,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        recipient = UserFactory.create(is_deleted=True)
+        commodity = CommodityFactory.create()
+
+        request_data = {
+            "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
+            "volume": 1,
+            "action": TransactionAction.BUYING,
+            "recipient": json.dumps({"name": recipient.username}),
+        }
+
+        client.login(user)
+
+        # Act
+        response = client.post(path=self.URL, data=request_data)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.NOT_FOUND, response_json
+        assert response_json == snapshot
+        assert response_json["code"] == "transactions.recipient_not_found"
+        assert not Transaction.objects.exists()
+
     def test_longitude_without_latitude(
         self,
         client: APIClient,
@@ -428,6 +470,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": TransactionAction.BUYING,
             "recipient": json.dumps({"name": recipient.username}),
@@ -459,6 +502,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": "12345678-1234-1234-1234-123456789012",
+            "harvest_season_id": str(HarvestSeasonFactory.create().id),
             "volume": 1,
             "action": TransactionAction.BUYING,
             "recipient": json.dumps({"name": recipient.username}),
@@ -474,6 +518,32 @@ class TestTransactionsDownstreamCreate:
         assert response.status_code == HTTPStatus.NOT_FOUND, response_json
         assert response_json == snapshot
 
+    def test_commodity_archived(self, client: APIClient) -> None:
+        # Arrange
+        user = UserFactory.create()
+        recipient = UserFactory.create()
+        commodity = CommodityFactory.create(is_archived=True)
+
+        request_data = {
+            "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
+            "volume": 1,
+            "action": TransactionAction.BUYING,
+            "recipient": json.dumps({"name": recipient.username}),
+        }
+
+        client.login(user)
+
+        # Act
+        response = client.post(path=self.URL, data=request_data)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.BAD_REQUEST, response_json
+        assert response_json["code"] == "commodities.archived"
+        assert response_json["errors"]["commodity_id"] == str(commodity.id)
+        assert not Transaction.objects.filter(created_by_id=user.id).exists()
+
     def test_recipient_does_not_exist(
         self,
         client: APIClient,
@@ -488,6 +558,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": TransactionAction.BUYING,
             "recipient": json.dumps({"name": "Not Existing Recipient"}),
@@ -517,6 +588,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": TransactionAction.BUYING,
             "recipient": json.dumps(
@@ -551,6 +623,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 1,
             "action": TransactionAction.BUYING,
             "recipient": json.dumps({"name": user.username}),
@@ -651,6 +724,7 @@ class TestTransactionsDownstreamCreate:
 
         request_data = {
             "commodity_id": str(commodity.id),
+            "harvest_season_id": str(commodity.harvest_seasons.get().id),
             "volume": 100.0,
             "location": TransactionLocation.MANUAL,
             "transaction_latitude": 0,

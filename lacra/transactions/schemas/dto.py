@@ -9,6 +9,7 @@ from lacra.commodities.schemas.dto import CommodityWithGroupDTO
 from lacra.common.schemas.dto import BaseModelDTO
 from lacra.db.enums import TransactionAction, TransactionLocation, TransactionStatus, TransactionType
 from lacra.db.enums.transactions import TransactionTraceability
+from lacra.harvest_seasons.schemas.dto import HarvestSeasonDTO
 from lacra.users.schemas.dto import UserDTO
 
 FloatDecimal = Annotated[Decimal, PlainSerializer(lambda x: float(x), return_type=float, when_used="json")]
@@ -31,7 +32,9 @@ class TransactionDTO(BaseModelDTO):
     farm_longitude: FloatDecimal | None
 
     commodity: CommodityWithGroupDTO
+    harvest_season: HarvestSeasonDTO
     volume: FloatDecimal
+    signed_volume: FloatDecimal
 
     is_buying_from_farmer: bool
     is_automatic: bool
@@ -41,6 +44,11 @@ class TransactionDTO(BaseModelDTO):
     seller: UserDTO | None
     buyer: UserDTO | None
     created_by_id: UUID
+
+
+class TransactionStatusUpdateDTO(BaseModel):
+    transaction: TransactionDTO
+    automatic_transaction: TransactionDTO | None
 
 
 class TraceabilityCountsDTO(BaseModel):
@@ -98,6 +106,13 @@ class ChainLocationBundleDTO(BaseModel):
     geojson_merged_transactions: list[UUID]
     custom_location_file_transactions: list[UUID]
     no_location_file_transactions: list[UUID]
+
+
+class LocationSummaryDTO(BaseModel):
+    full_traceability_farms: int
+    manually_added_farms: int
+    farms_without_geolocation: int
+    traders: int
 
 
 class ConversionDTO(BaseModelDTO):

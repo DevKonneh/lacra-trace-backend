@@ -3,8 +3,8 @@ from django.test import Client
 from rest_framework.test import APIClient as TestAPIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
-from tests.helpers.constants import ADMIN_PASSWORD
 from lacra.db.models import User
+from tests.helpers.constants import ADMIN_PASSWORD
 
 
 class APIClient(TestAPIClient):

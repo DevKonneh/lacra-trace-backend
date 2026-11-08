@@ -1,9 +1,9 @@
 import pytest
 
-from tests.factories.transactions import TransactionFactory
-from tests.factories.users import GadgetFactory, UserFactory
 from lacra.db.models import Transaction
 from lacra.transactions.export.resources import TransactionAdminResource, TransactionUserResource
+from tests.factories.transactions import TransactionFactory
+from tests.factories.users import GadgetFactory, UserFactory
 
 pytestmark = [pytest.mark.django_db]
 

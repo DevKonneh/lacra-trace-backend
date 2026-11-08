@@ -1,9 +1,11 @@
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import quote
 
 import environ
 import firebase_admin
 import sentry_sdk
+from django.templatetags.static import static
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -64,6 +66,7 @@ INSTALLED_APPS = (
     "lacra.commodities",
     "lacra.common",
     "lacra.contrib",
+    "lacra.harvest_seasons",
     "lacra.notifications",
     "lacra.system",
     "lacra.transactions",
@@ -71,8 +74,10 @@ INSTALLED_APPS = (
 )
 
 MIDDLEWARE = (
+    "lacra.common.middleware.TestModeMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -184,7 +189,21 @@ DATABASES = {
         "PASSWORD": env.str("POSTGRES_PASSWORD"),
         "NAME": env.str("POSTGRES_DB", default="app"),
     },
+    "test_mode": {
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": env.str("POSTGRES_HOST", default="127.0.0.1"),
+        "PORT": env.int("POSTGRES_PORT", default=5432),
+        "USER": env.str("POSTGRES_USER", default="app"),
+        "PASSWORD": env.str("POSTGRES_PASSWORD"),
+        "NAME": env.str("POSTGRES_DB", default="app"),
+        "OPTIONS": {"options": "-c search_path=test_mode,public"},
+        # Same physical database as "default" - don't let the test runner create a
+        # second physical test database for this alias.
+        "TEST": {"MIRROR": "default"},
+    },
 }
+
+DATABASE_ROUTERS = ["lacra.common.db_router.TestModeRouter"]
 
 # Caching
 # ______________________________________________________________________________________________________________________
@@ -195,15 +214,23 @@ REDIS_PORT = env.int("REDIS_PORT", default=6379)
 
 REDIS_DB = env.int("REDIS_DB", default=0)
 
-REDIS_PASSWORD = env.str("REDIS_PASSWORD")
+# Optional: managed Redis/Key Value services (e.g. Render) hand out a single connection string. When REDIS_URL is
+# set it wins over REDIS_HOST/REDIS_PORT/REDIS_DB/REDIS_PASSWORD. Use the ``rediss://`` scheme for TLS endpoints.
+# REDIS_PASSWORD stays supported for the original compose setup and may be empty for password-less internal Redis.
+REDIS_PASSWORD = env.str("REDIS_PASSWORD", default="")
+
+REDIS_URL = env.str("REDIS_URL", default="") or (
+    f"redis://:{quote(REDIS_PASSWORD, safe='')}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+    if REDIS_PASSWORD
+    else f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+)
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",
+        "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": REDIS_PASSWORD,
         },
     },
 }
@@ -211,7 +238,7 @@ CACHES = {
 # Celery
 # ----------------------------------------------------------------------------------------------------------------------
 
-CELERY_BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+CELERY_BROKER_URL = REDIS_URL
 
 CELERY_RESULT_BACKEND = "django-db"
 
@@ -238,7 +265,7 @@ STORAGES = {
         "OPTIONS": S3_OPTIONS,
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
@@ -247,7 +274,7 @@ STORAGES = {
 
 OTP_LENGTH = env.int("OTP_LENGTH", default=6)
 
-OTP_EXPIRY_MINUTES = env.int("OTP_EXPIRY_MINUTES", default=5)
+OTP_EXPIRY_MINUTES = env.int("OTP_EXPIRY_MINUTES", default=15)
 
 OTP_MOCK_CODE = env.str("OTP_MOCK_CODE", default=None)
 
@@ -312,6 +339,12 @@ CAPTCHA_TURNSTILE_SECRET_KEY = env.str("CAPTCHA_TURNSTILE_SECRET_KEY", default="
 
 PUSH_NOTIFICATIONS_CONFIG_PATH = BASE_DIR / "config" / "push"
 
+# Path of the Firebase service-account JSON. Defaults to config/push/fcm.json (docker volume); on Render upload it as a
+# Secret File and set this to /etc/secrets/fcm.json.
+PUSH_NOTIFICATIONS_FCM_CREDENTIALS_PATH = Path(
+    env.str("PUSH_NOTIFICATIONS_FCM_CREDENTIALS_PATH", default=str(PUSH_NOTIFICATIONS_CONFIG_PATH / "fcm.json"))
+)
+
 PUSH_NOTIFICATIONS_SETTINGS_FCM_APP_ID = env.str("PUSH_NOTIFICATIONS_FCM_APP_ID", default="fcm")
 
 PUSH_NOTIFICATIONS_SETTINGS_APNS_APP_ID = env.str("PUSH_NOTIFICATIONS_APNS_APP_ID", default="apns")
@@ -326,7 +359,7 @@ if env.bool("PUSH_NOTIFICATIONS_FCM_ENABLED", default=False):  # pragma: no cove
     PUSH_NOTIFICATIONS_SETTINGS["APPLICATIONS"][PUSH_NOTIFICATIONS_SETTINGS_FCM_APP_ID] = {  # type: ignore
         "PLATFORM": "FCM",
         "FIREBASE_APP": firebase_admin.initialize_app(
-            credential=firebase_admin.credentials.Certificate(PUSH_NOTIFICATIONS_CONFIG_PATH / "fcm.json"),
+            credential=firebase_admin.credentials.Certificate(PUSH_NOTIFICATIONS_FCM_CREDENTIALS_PATH),
         ),
     }
 
@@ -379,9 +412,31 @@ LACRA_TRANSACTION_EXPIRATION_DAYS = env.int("LACRA_TRANSACTION_EXPIRATION_DAYS",
 # ______________________________________________________________________________________________________________________
 
 UNFOLD = {
-    "SITE_TITLE": "LACRA Admin",
-    "SITE_HEADER": "LACRA Administration",
+    "SITE_TITLE": "LACRA Trace Admin",
+    "SITE_HEADER": "LACRA Trace Administration",
+    "SITE_SUBHEADER": "Liberia Agriculture Commodity Regulatory Authority",
     "SITE_URL": "/",
+    # Official LACRA logo on a white disc (lacra/contrib/static/lacra/). Derived from a 512px JPEG.
+    "SITE_ICON": lambda _request: static("lacra/logo.png"),
+    "SITE_FAVICONS": [
+        {"rel": "icon", "sizes": "64x64", "type": "image/png", "href": lambda _request: static("lacra/favicon.png")},
+    ],
+    # Primary colour scale built from the brand green #226C13 (600), which is derived from the logo.
+    "COLORS": {
+        "primary": {
+            "50": "240, 245, 238",
+            "100": "222, 233, 220",
+            "200": "189, 211, 184",
+            "300": "149, 184, 142",
+            "400": "100, 152, 90",
+            "500": "61, 126, 47",
+            "600": "34, 108, 19",
+            "700": "28, 89, 16",
+            "800": "22, 71, 13",
+            "900": "18, 56, 10",
+            "950": "11, 35, 6",
+        },
+    },
     "DASHBOARD_CALLBACK": "lacra.contrib.admin.dashboard.dashboard_callback",
     "SIDEBAR": {
         "show_search": True,
@@ -444,9 +499,9 @@ UNFOLD = {
                         "link": reverse_lazy("admin:db_conversionrecipe_changelist"),
                     },
                     {
-                        "title": _("Seasons"),
+                        "title": _("Harvest Seasons"),
                         "icon": "calendar_month",
-                        "link": reverse_lazy("admin:db_season_changelist"),
+                        "link": reverse_lazy("admin:db_harvestseason_changelist"),
                     },
                 ],
             },

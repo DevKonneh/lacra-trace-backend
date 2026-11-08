@@ -5,11 +5,11 @@ from django.urls import reverse
 from rest_framework_simplejwt.tokens import RefreshToken
 from syrupy import SnapshotAssertion
 
+from lacra.auth.jwt.schemas.dto import AccessRefreshTokenDTO
+from lacra.common.schemas.base import DataResponse
 from tests.factories.users import UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.constants import USER_PASSWORD
-from lacra.auth.jwt.schemas.dto import AccessRefreshTokenDTO
-from lacra.common.schemas.base import DataResponse
 
 pytestmark = [pytest.mark.django_db]
 

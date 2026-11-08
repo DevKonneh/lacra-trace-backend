@@ -1,5 +1,6 @@
 import io
 import json
+from datetime import date
 from http import HTTPStatus
 from io import BufferedReader
 from unittest.mock import MagicMock, Mock
@@ -11,15 +12,16 @@ from freezegun.api import FrozenDateTimeFactory
 from syrupy import SnapshotAssertion
 from syrupy.filters import props
 
-from tests.factories.balances import BalanceFactory
-from tests.factories.commodities import CommodityFactory
-from tests.factories.users import GadgetFactory, UserFactory
-from tests.helpers.clients import APIClient
-from tests.helpers.constants import DEFAULT_DATETIME, USER_EMAIL, USER_PHONE
-from lacra.db.enums import GadgetType, TransactionLocation, TransactionStatus, TransactionType
+from lacra.db.enums import GadgetType, HarvestSeasonStatus, TransactionLocation, TransactionStatus, TransactionType
 from lacra.db.enums.transactions import TransactionTraceability
 from lacra.db.models import Balance, Transaction
 from lacra.transactions.schemas.requests import TransactionProducerCreateRequest
+from tests.factories.balances import BalanceFactory
+from tests.factories.commodities import CommodityFactory
+from tests.factories.harvest_seasons import HarvestSeasonCommodityFactory, HarvestSeasonFactory
+from tests.factories.users import GadgetFactory, UserFactory
+from tests.helpers.clients import APIClient
+from tests.helpers.constants import DEFAULT_DATETIME, USER_EMAIL, USER_PHONE
 
 pytestmark = [pytest.mark.django_db]
 
@@ -92,6 +94,147 @@ class TestTransactionsProducerCreate:
 
         balance = Balance.objects.get(user=user, commodity=commodity)
         assert balance.volume == request_data["volume"]
+
+    def test_recording_an_old_harvest(self, client: APIClient) -> None:
+        # Arrange
+        user = UserFactory.create()
+        commodity = CommodityFactory.create(with_harvest_season=False)
+        past_season = HarvestSeasonFactory.create(
+            start_date=date(2024, 9, 1),
+            end_date=date(2025, 9, 1),
+            status=HarvestSeasonStatus.PAST,
+        )
+        active_season = HarvestSeasonFactory.create(start_date=date(2025, 9, 1), end_date=date(2026, 9, 1))
+        HarvestSeasonCommodityFactory.create(harvest_season=past_season, commodity=commodity)
+        HarvestSeasonCommodityFactory.create(harvest_season=active_season, commodity=commodity)
+
+        request_data = {
+            "commodity_id": str(commodity.id),
+            "volume": 1,
+            "is_buying_from_farmer": True,
+            "harvest_season_id": str(past_season.id),
+        }
+
+        client.login(user)
+
+        # Act
+        response = client.post(path=self.URL, data=request_data, format="multipart")
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+
+        transaction = Transaction.objects.get(pk=response_json["data"]["id"])
+        assert transaction.harvest_season_id == past_season.id
+
+        balance = Balance.objects.get(user=user, commodity=commodity)
+        assert balance.harvest_season_id == past_season.id
+
+    def test_defaults_to_the_active_season(self, client: APIClient) -> None:
+        # Arrange
+        user = UserFactory.create()
+        commodity = CommodityFactory.create()
+
+        request_data = {"commodity_id": str(commodity.id), "volume": 1, "is_buying_from_farmer": True}
+
+        client.login(user)
+
+        # Act
+        response = client.post(path=self.URL, data=request_data, format="multipart")
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+
+        transaction = Transaction.objects.get(pk=response_json["data"]["id"])
+        assert transaction.harvest_season_id == commodity.harvest_seasons.get().id
+
+    def test_harvest_season_not_covering_the_commodity(self, client: APIClient) -> None:
+        # Arrange
+        user = UserFactory.create()
+        commodity = CommodityFactory.create()
+        foreign_season = HarvestSeasonFactory.create()
+
+        request_data = {
+            "commodity_id": str(commodity.id),
+            "volume": 1,
+            "is_buying_from_farmer": True,
+            "harvest_season_id": str(foreign_season.id),
+        }
+
+        client.login(user)
+
+        # Act
+        response = client.post(path=self.URL, data=request_data, format="multipart")
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.BAD_REQUEST, response_json
+        assert response_json["code"] == "harvest_seasons.commodity_not_in_season"
+        assert response_json["errors"]["commodity_id"] == str(commodity.id)
+        assert not Transaction.objects.filter(created_by_id=user.id).exists()
+
+    def test_harvest_season_does_not_exist(self, client: APIClient) -> None:
+        # Arrange
+        user = UserFactory.create()
+        commodity = CommodityFactory.create()
+        harvest_season_id = "12345678-1234-1234-1234-123456789012"
+
+        request_data = {
+            "commodity_id": str(commodity.id),
+            "volume": 1,
+            "is_buying_from_farmer": True,
+            "harvest_season_id": harvest_season_id,
+        }
+
+        client.login(user)
+
+        # Act
+        response = client.post(path=self.URL, data=request_data, format="multipart")
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.NOT_FOUND, response_json
+        assert response_json["errors"]["harvest_season"] == [harvest_season_id]
+        assert not Transaction.objects.filter(created_by_id=user.id).exists()
+
+    def test_commodity_without_an_active_season(self, client: APIClient) -> None:
+        # Arrange
+        user = UserFactory.create()
+        past_season = HarvestSeasonFactory.create(status=HarvestSeasonStatus.PAST)
+        commodity = CommodityFactory.create(with_harvest_season=past_season)
+
+        request_data = {"commodity_id": str(commodity.id), "volume": 1, "is_buying_from_farmer": True}
+
+        client.login(user)
+
+        # Act
+        response = client.post(path=self.URL, data=request_data, format="multipart")
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.CONFLICT, response_json
+        assert response_json["code"] == "harvest_seasons.active_not_configured"
+        assert not Transaction.objects.filter(created_by_id=user.id).exists()
+
+    def test_commodity_archived(self, client: APIClient) -> None:
+        # Arrange
+        user = UserFactory.create()
+        commodity = CommodityFactory.create(is_archived=True)
+
+        request_data = {"commodity_id": str(commodity.id), "volume": 1, "is_buying_from_farmer": True}
+
+        client.login(user)
+
+        # Act
+        response = client.post(path=self.URL, data=request_data, format="multipart")
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.BAD_REQUEST, response_json
+        assert response_json["code"] == "commodities.archived"
+        assert response_json["errors"]["commodity_id"] == str(commodity.id)
+        assert not Transaction.objects.filter(created_by_id=user.id).exists()
 
     @pytest.mark.parametrize("location", [TransactionLocation.QR, TransactionLocation.GPS])
     def test_full_traceability(  # noqa: PLR0913 Too many arguments in function definition
@@ -350,8 +493,8 @@ class TestTransactionsProducerCreate:
 
         mock_invite_email.assert_called_once_with(
             recipients=[USER_EMAIL],
-            subject="Welcome to LACRA!",
-            message="You have been invited to Lacra!",
+            subject="Welcome to LACRA Trace!",
+            message="You have been invited to LACRA Trace!",
         )
 
     def test_find_recipient_with_email(
@@ -431,7 +574,7 @@ class TestTransactionsProducerCreate:
 
         mock_invite_sms.assert_called_once_with(
             recipient=USER_PHONE.lstrip("+"),
-            message="You have been invited to Lacra!",
+            message="You have been invited to LACRA Trace!",
         )
 
     def test_find_recipient_with_phone(

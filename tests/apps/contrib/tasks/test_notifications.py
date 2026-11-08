@@ -5,9 +5,9 @@ from uuid import uuid4
 import pytest
 from django.utils import timezone
 
-from tests.factories.users import UserFactory
 from lacra.contrib.tasks.notifications import send_apns_push, send_gcm_push
 from lacra.db.enums.notifications import NotificationStatus, NotificationType
+from tests.factories.users import UserFactory
 
 pytestmark = [pytest.mark.django_db]
 

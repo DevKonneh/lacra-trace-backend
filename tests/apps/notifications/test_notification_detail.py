@@ -7,14 +7,14 @@ from django.urls import reverse
 from freezegun.api import FrozenDateTimeFactory
 from syrupy import SnapshotAssertion
 
+from lacra.common.schemas.base import DataResponse
+from lacra.db.enums.notifications import NotificationType
+from lacra.notifications.schemas.dto import NotificationDTO
 from tests.factories.notifications import NotificationFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.constants import DEFAULT_DATETIME
 from tests.helpers.utils import queries_to_str
-from lacra.common.schemas.base import DataResponse
-from lacra.db.enums.notifications import NotificationType
-from lacra.notifications.schemas.dto import NotificationDTO
 
 pytestmark = [pytest.mark.django_db]
 

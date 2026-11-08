@@ -3,6 +3,8 @@ from http import HTTPStatus
 import pytest
 from django.urls import reverse
 
+from lacra.contrib.admin.balances import BalanceAdmin
+from lacra.db.enums.harvest_seasons import HarvestSeasonStatus
 from tests.factories.balances import BalanceFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import AdminClient
@@ -46,3 +48,21 @@ class TestBalancesAdmin:
 
         # Asserts
         assert response.status_code == HTTPStatus.OK, response_content
+
+    def test_balance_admin_display_methods(self) -> None:
+        # Arrange
+        balance = BalanceFactory.create()
+
+        # Act
+        short_id_result = BalanceAdmin.short_id(None, balance)
+        user_link_result = BalanceAdmin.user_link(None, balance)
+        commodity_link_result = BalanceAdmin.commodity_link(None, balance)
+        harvest_season_link_result = BalanceAdmin.harvest_season_link(None, balance)
+        harvest_season_status_result = BalanceAdmin.harvest_season_status_labeled(None, balance)
+
+        # Assert
+        assert short_id_result is not None
+        assert user_link_result is not None
+        assert commodity_link_result is not None
+        assert harvest_season_link_result is not None
+        assert harvest_season_status_result == HarvestSeasonStatus(balance.harvest_season.status).name

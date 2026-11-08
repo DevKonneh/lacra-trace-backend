@@ -1,21 +1,20 @@
 #!/bin/bash
 
+set -euo pipefail
+
 echo "Apply database migrations"
 uv run --no-dev ./manage.py migrate
 
+echo "Apply test mode schema migrations"
+uv run --no-dev ./manage.py migrate --database=test_mode
+
 echo "Create superuser"
-uv run --no-dev ./manage.py createsuperuser --noinput
+uv run --no-dev ./manage.py createsuperuser --noinput || echo "Superuser already exists"
 
 echo "Collect static files"
 uv run --no-dev ./manage.py collectstatic --noinput
 
-# compilemessages skipped — takes 10+ minutes scanning Django locale files
-
-echo "Start gunicorn server on port ${PORT:-8000}"
-uv run --no-dev gunicorn \
-    --bind "0.0.0.0:${PORT:-8000}" \
-    --workers "${WEB_CONCURRENCY:-2}" \
-    --timeout 120 \
-    lacra.common.wsgi
+echo "Start gunicorn server"
+uv run --no-dev gunicorn -c ./lacra/gunicorn.conf.py lacra.common.wsgi
 
 exec "$@"

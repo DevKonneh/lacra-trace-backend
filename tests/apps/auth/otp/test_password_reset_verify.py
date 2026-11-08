@@ -6,10 +6,10 @@ from django.test import override_settings
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import GadgetFactory
-from tests.helpers.clients import APIClient
 from lacra.auth.otp.constances import PASSWORD_RESET_CACHE_KEY
 from lacra.db.models import User
+from tests.factories.users import GadgetFactory
+from tests.helpers.clients import APIClient
 
 NEW_USER_PASSWORD = "S3cr3t-Us3r-N3w-P455w0rd"
 OTP_CODE = "123456"

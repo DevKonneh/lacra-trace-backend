@@ -5,11 +5,11 @@ from django.urls import reverse
 from syrupy import SnapshotAssertion
 from syrupy.filters import props
 
+from lacra.db.models import Gadget
+from lacra.users.schemas.requests import GadgetCreateRequest
 from tests.factories.users import GadgetFactory, UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.constants import USER_EMAIL, USER_PHONE
-from lacra.db.models import Gadget
-from lacra.users.schemas.requests import GadgetCreateRequest
 
 pytestmark = [pytest.mark.django_db]
 

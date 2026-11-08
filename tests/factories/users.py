@@ -3,12 +3,12 @@ from typing import Any, cast
 import factory
 import pytest
 
-from tests.factories.base import BaseFactory
-from tests.factories.notifications import NotificationSettingsFactory
-from tests.helpers.constants import ADMIN_PASSWORD
 from lacra.db.enums import GadgetType
 from lacra.db.enums.notifications import NotificationType
 from lacra.db.models import Gadget, User
+from tests.factories.base import BaseFactory
+from tests.factories.notifications import NotificationSettingsFactory
+from tests.helpers.constants import ADMIN_PASSWORD
 
 
 class UserFactory(BaseFactory[User]):

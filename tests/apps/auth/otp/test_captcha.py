@@ -8,9 +8,9 @@ from pytest_django.fixtures import SettingsWrapper
 from pytest_mock import MockerFixture
 from syrupy import SnapshotAssertion
 
+from lacra.db.enums import GadgetType
 from tests.factories.users import GadgetFactory
 from tests.helpers.clients import APIClient
-from lacra.db.enums import GadgetType
 
 pytestmark = [pytest.mark.django_db]
 

@@ -6,13 +6,13 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
+from lacra.common.schemas.base import DataResponse
+from lacra.notifications.schemas.dto import DeviceDTO
 from tests.factories.notifications import APNSDeviceFactory, GCMDeviceFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.constants import SMALL_BATCH_SIZE
 from tests.helpers.utils import queries_to_str
-from lacra.common.schemas.base import DataResponse
-from lacra.notifications.schemas.dto import DeviceDTO
 
 pytestmark = [pytest.mark.django_db]
 

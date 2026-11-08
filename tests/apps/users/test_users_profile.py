@@ -7,14 +7,14 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import GadgetFactory, UserFactory
-from tests.helpers.clients import APIClient
-from tests.helpers.utils import queries_to_str
 from lacra.common.schemas.base import DataResponse
 from lacra.common.schemas.errors import NotFound
 from lacra.users.schemas.dto import UserDTO
 from lacra.users.schemas.requests import PasswordChangeRequest
 from lacra.users.services.users import UsersService
+from tests.factories.users import GadgetFactory, UserFactory
+from tests.helpers.clients import APIClient
+from tests.helpers.utils import queries_to_str
 
 pytestmark = [pytest.mark.django_db]
 

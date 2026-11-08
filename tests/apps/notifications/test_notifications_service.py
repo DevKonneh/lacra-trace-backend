@@ -1,12 +1,12 @@
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 
+from lacra.db.enums.notifications import NotificationStatus, NotificationType
+from lacra.notifications.services.notifications import NotificationsService
 from tests.factories.notifications import NotificationFactory
 from tests.factories.transactions import TransactionFactory
 from tests.factories.users import UserFactory
 from tests.helpers.constants import DEFAULT_DATETIME
-from lacra.db.enums.notifications import NotificationStatus, NotificationType
-from lacra.notifications.services.notifications import NotificationsService
 
 pytestmark = [pytest.mark.django_db]
 
