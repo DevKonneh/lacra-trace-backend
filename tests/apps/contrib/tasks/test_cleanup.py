@@ -3,10 +3,10 @@ from datetime import timedelta
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 
-from tests.factories.users import GadgetFactory
-from tests.helpers.constants import DEFAULT_DATETIME
 from lacra.contrib.tasks.cleanup import cleanup_unverified_gadgets
 from lacra.db.models import Gadget
+from tests.factories.users import GadgetFactory
+from tests.helpers.constants import DEFAULT_DATETIME
 
 pytestmark = [pytest.mark.django_db]
 

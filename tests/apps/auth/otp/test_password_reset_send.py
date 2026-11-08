@@ -6,10 +6,10 @@ from django.core.cache import cache
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import GadgetFactory
-from tests.helpers.clients import APIClient
 from lacra.auth.otp.constances import PASSWORD_RESET_CACHE_KEY
 from lacra.db.enums import GadgetType
+from tests.factories.users import GadgetFactory
+from tests.helpers.clients import APIClient
 
 pytestmark = [pytest.mark.django_db]
 

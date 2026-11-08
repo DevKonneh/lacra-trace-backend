@@ -5,11 +5,11 @@ from django.urls import reverse
 from freezegun.api import FrozenDateTimeFactory
 from syrupy import SnapshotAssertion
 
+from lacra.db.enums.notifications import NotificationStatus
 from tests.factories.notifications import NotificationFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.constants import DEFAULT_DATETIME
-from lacra.db.enums.notifications import NotificationStatus
 
 pytestmark = [pytest.mark.django_db]
 

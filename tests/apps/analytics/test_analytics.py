@@ -1,3 +1,4 @@
+from datetime import date
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
@@ -7,14 +8,16 @@ from django.urls import reverse
 from freezegun.api import FrozenDateTimeFactory
 from syrupy import SnapshotAssertion
 
+from lacra.analytics.constants import USER_ANALYTICS_CACHE_KEY
+from lacra.analytics.schemas.dto import AnalyticsDataDTO, UserMetricsDTO
+from lacra.common.schemas.base import DataResponse
+from lacra.db.enums import HarvestSeasonStatus
 from tests.factories.commodities import CommodityFactory
+from tests.factories.harvest_seasons import HarvestSeasonCommodityFactory, HarvestSeasonFactory
 from tests.factories.transactions import TransactionFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.constants import DEFAULT_DATETIME
-from lacra.analytics.constants import USER_ANALYTICS_CACHE_KEY
-from lacra.analytics.schemas.dto import AnalyticsDataDTO, UserMetricsDTO
-from lacra.common.schemas.base import DataResponse
 
 pytestmark = [pytest.mark.django_db]
 
@@ -50,6 +53,46 @@ class TestAnalytics:
         assert data_response.data.current_seasons is not None
         assert data_response.data.season_transactions_daily is not None
         assert data_response.data.transactions_by_seasons is not None
+
+    def test_season_blocks_count_only_the_running_seasons(
+        self,
+        client: APIClient,
+        freezer: FrozenDateTimeFactory,
+    ) -> None:
+        # Arrange
+        freezer.move_to(DEFAULT_DATETIME)
+
+        user = UserFactory.create()
+        commodity = CommodityFactory.create(with_harvest_season=False)
+        past_season = HarvestSeasonFactory.create(
+            start_date=date(2024, 9, 1),
+            end_date=date(2025, 9, 1),
+            status=HarvestSeasonStatus.PAST,
+        )
+        active_season = HarvestSeasonFactory.create(start_date=date(2025, 9, 1), end_date=date(2026, 9, 1))
+        HarvestSeasonCommodityFactory.create(harvest_season=past_season, commodity=commodity)
+        HarvestSeasonCommodityFactory.create(harvest_season=active_season, commodity=commodity)
+
+        TransactionFactory.create_batch(size=2, commodity=commodity, harvest_season=active_season, buyer=user)
+        TransactionFactory.create(commodity=commodity, harvest_season=past_season, buyer=user)
+
+        client.login(user)
+
+        # Act
+        response = client.get(path=self.URL)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+
+        data = DataResponse[AnalyticsDataDTO](**response_json).data
+
+        assert [season.id for season in data.current_seasons] == [active_season.id]
+        assert data.current_seasons[0].name == active_season.name
+        assert data.current_seasons[0].transactions_count == 2  # noqa: PLR2004 Magic value used in comparison
+
+        assert {item.season_id for item in data.season_transactions_daily} == {active_season.id}
+        assert [item.transactions_count for item in data.transactions_by_seasons] == [2]
 
     def test_unauthorized(self, client: APIClient, snapshot: SnapshotAssertion) -> None:
         # Act

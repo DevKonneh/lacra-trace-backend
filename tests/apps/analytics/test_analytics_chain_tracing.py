@@ -4,11 +4,11 @@ from unittest.mock import Mock, patch
 import pytest
 from django.core.cache import cache
 
+from lacra.analytics.services import AnalyticsService
+from lacra.db.enums.transactions import TransactionStatus
 from tests.factories.commodities import CommodityFactory
 from tests.factories.transactions import TransactionFactory
 from tests.factories.users import UserFactory
-from lacra.analytics.services import AnalyticsService
-from lacra.db.enums.transactions import TransactionStatus
 
 pytestmark = [pytest.mark.django_db]
 

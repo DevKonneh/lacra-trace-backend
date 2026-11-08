@@ -6,12 +6,12 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import UserFactory
-from tests.helpers.clients import APIClient
-from tests.helpers.utils import queries_to_str
 from lacra.common.schemas.base import DataResponse
 from lacra.db.enums.notifications import NotificationType
 from lacra.notifications.schemas.dto import NotificationSettingsDTO
+from tests.factories.users import UserFactory
+from tests.helpers.clients import APIClient
+from tests.helpers.utils import queries_to_str
 
 pytestmark = [pytest.mark.django_db]
 

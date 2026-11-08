@@ -6,14 +6,14 @@ from freezegun.api import FrozenDateTimeFactory
 from push_notifications.models import APNSDevice, GCMDevice
 from syrupy import SnapshotAssertion
 
-from tests.factories.notifications import APNSDeviceFactory, GCMDeviceFactory
-from tests.factories.users import UserFactory
-from tests.helpers.clients import APIClient
-from tests.helpers.constants import DEFAULT_DATETIME
 from lacra.db.enums.notifications import NotificationDeviceType
 from lacra.notifications.schemas.errors import DeviceAlreadyExistsError
 from lacra.notifications.schemas.requests import DeviceAddRequest
 from lacra.notifications.services.notifications_push import NotificationsPushService
+from tests.factories.notifications import APNSDeviceFactory, GCMDeviceFactory
+from tests.factories.users import UserFactory
+from tests.helpers.clients import APIClient
+from tests.helpers.constants import DEFAULT_DATETIME
 
 pytestmark = [pytest.mark.django_db]
 

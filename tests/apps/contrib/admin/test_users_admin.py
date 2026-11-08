@@ -3,17 +3,17 @@ from http import HTTPStatus
 import pytest
 from django.urls import reverse
 
-from tests.factories.balances import BalanceFactory
-from tests.factories.notifications import NotificationFactory
-from tests.factories.transactions import TransactionFactory
-from tests.factories.users import UserFactory
-from tests.helpers.clients import AdminClient
 from lacra.contrib.admin.users import (
     BalanceInline,
     BuyingInline,
     NotificationReceivedInline,
     SellingInline,
 )
+from tests.factories.balances import BalanceFactory
+from tests.factories.notifications import NotificationFactory
+from tests.factories.transactions import TransactionFactory
+from tests.factories.users import UserFactory
+from tests.helpers.clients import AdminClient
 
 pytestmark = [pytest.mark.django_db]
 

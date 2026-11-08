@@ -7,13 +7,13 @@ from django.urls import reverse
 from pytest_mock import MockerFixture
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import GadgetFactory
-from tests.helpers.clients import APIClient
-from tests.helpers.constants import USER_EMAIL
 from lacra.auth.jwt.schemas.dto import AccessRefreshTokenDTO
 from lacra.common.schemas.base import DataResponse
 from lacra.db.enums import GadgetType
 from lacra.db.models import Gadget, User
+from tests.factories.users import GadgetFactory
+from tests.helpers.clients import APIClient
+from tests.helpers.constants import USER_EMAIL
 
 pytestmark = [pytest.mark.django_db]
 

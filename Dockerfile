@@ -24,6 +24,9 @@ COPY manage.py .
 COPY locale locale
 COPY lacra lacra
 
+# Compile translations at build time (gettext is installed above)
+RUN for po in locale/*/LC_MESSAGES/django.po; do msgfmt -o "${po%.po}.mo" "$po"; done
+
 # Expose port
 EXPOSE 8000
 

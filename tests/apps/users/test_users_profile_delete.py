@@ -6,10 +6,10 @@ import pytest
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import GadgetFactory, UserFactory
-from tests.helpers.clients import APIClient
 from lacra.db.enums import GadgetType
 from lacra.users.views import ProfileDeleteView
+from tests.factories.users import GadgetFactory, UserFactory
+from tests.helpers.clients import APIClient
 
 pytestmark = [pytest.mark.django_db]
 

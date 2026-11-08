@@ -13,15 +13,15 @@ from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
 from syrupy import SnapshotAssertion
 
+from lacra.common.schemas.base import PaginatedDataResponse
+from lacra.db.enums.notifications import NotificationStatus, NotificationType
+from lacra.notifications.schemas.dto import NotificationDTO
+from lacra.notifications.services.notifications_push import NotificationsPushService
 from tests.factories.notifications import NotificationFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.constants import DEFAULT_DATETIME, MEDIUM_BATCH_SIZE, SMALL_BATCH_SIZE
 from tests.helpers.utils import queries_to_str
-from lacra.common.schemas.base import PaginatedDataResponse
-from lacra.db.enums.notifications import NotificationStatus, NotificationType
-from lacra.notifications.schemas.dto import NotificationDTO
-from lacra.notifications.services.notifications_push import NotificationsPushService
 
 pytestmark = [pytest.mark.django_db]
 

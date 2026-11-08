@@ -7,10 +7,10 @@ from django.test import override_settings
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import GadgetFactory, UserFactory
-from tests.helpers.clients import APIClient
 from lacra.auth.otp.constances import OTP_CACHE_KEY
 from lacra.db.enums import GadgetType
+from tests.factories.users import GadgetFactory, UserFactory
+from tests.helpers.clients import APIClient
 
 OTP_CODE = "123456"
 

@@ -9,11 +9,11 @@ from django.urls import reverse
 from pytest_mock import MockerFixture
 from syrupy import SnapshotAssertion
 
-from tests.factories.users import GadgetFactory
-from tests.helpers.clients import APIClient
 from lacra.auth.otp.constances import OTP_CACHE_KEY
 from lacra.contrib.tasks import send_sms
 from lacra.db.enums import GadgetType
+from tests.factories.users import GadgetFactory
+from tests.helpers.clients import APIClient
 
 pytestmark = [pytest.mark.django_db]
 

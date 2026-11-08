@@ -7,15 +7,15 @@ from django.urls import reverse
 from freezegun.api import FrozenDateTimeFactory
 from syrupy import SnapshotAssertion
 
+from lacra.common.schemas.base import DataResponse
+from lacra.db.enums import TransactionStatus, TransactionType
+from lacra.db.enums.transactions import TransactionTraceability
+from lacra.transactions.schemas.dto import TransactionDTO
 from tests.factories.transactions import TransactionFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import APIClient
 from tests.helpers.constants import DEFAULT_DATETIME
 from tests.helpers.utils import queries_to_str
-from lacra.common.schemas.base import DataResponse
-from lacra.db.enums import TransactionStatus, TransactionType
-from lacra.db.enums.transactions import TransactionTraceability
-from lacra.transactions.schemas.dto import TransactionDTO
 
 pytestmark = [pytest.mark.django_db]
 
@@ -170,6 +170,26 @@ class TestTransactionsDetail:
 
         assert transaction.traceability is None
         assert data_response.data.traceability == TransactionTraceability.INCOMPLETE
+
+    def test_archived_commodity(self, client: APIClient) -> None:
+        # Arrange
+        user = UserFactory.create()
+        transaction = TransactionFactory.create(buyer=user, commodity__is_archived=True)
+
+        url = reverse(self.URL, args=(transaction.id,))
+
+        client.login(user)
+
+        # Act
+        response = client.get(path=url)
+        response_json = response.json()
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK, response_json
+
+        data_response = DataResponse[TransactionDTO](**response_json)
+        assert data_response.data.commodity.id == transaction.commodity.id
+        assert data_response.data.commodity.name == transaction.commodity.name
 
     def test_transaction_does_not_exist(
         self,

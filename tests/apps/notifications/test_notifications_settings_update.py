@@ -5,11 +5,11 @@ import pytest
 from django.urls import reverse
 from syrupy import SnapshotAssertion
 
+from lacra.db.enums.notifications import NotificationType
+from lacra.db.models import NotificationSettings
 from tests.factories.notifications import NotificationSettingsFactory
 from tests.factories.users import UserFactory
 from tests.helpers.clients import APIClient
-from lacra.db.enums.notifications import NotificationType
-from lacra.db.models import NotificationSettings
 
 pytestmark = [pytest.mark.django_db]
 

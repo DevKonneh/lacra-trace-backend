@@ -2,9 +2,9 @@ import factory
 import pytest
 from push_notifications.models import APNSDevice, GCMDevice
 
-from tests.factories.base import BaseFactory
 from lacra.db.enums.notifications import NotificationStatus, NotificationType
 from lacra.db.models import Notification, NotificationSettings
+from tests.factories.base import BaseFactory
 
 
 class NotificationFactory(BaseFactory[Notification]):
